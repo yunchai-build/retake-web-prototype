@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
 
-const ALL_TOOL_IDS = ['text', 'stickers', 'gallery', 'doodle', 'eraser', 'download'];
+const ALL_TOOL_IDS = ['text', 'stickers', 'doodle', 'eraser', 'download'];
 
 export function useToolbarState() {
   const [toolsCollapsed, setToolsCollapsed] = useState(false);
@@ -11,7 +11,7 @@ export function useToolbarState() {
   const labelPressTimerRef = useRef(null);
   const labelCollapseTimerRef = useRef(null);
 
-  const [recentTools, setRecentTools] = useState(['text', 'doodle', 'eraser']);
+  const [recentTools, setRecentTools] = useState(['text', 'doodle']);
   const orderedToolIds = useMemo(() => {
     const recentSet = new Set(recentTools);
     const rest = ALL_TOOL_IDS.filter(id => !recentSet.has(id));
@@ -21,31 +21,38 @@ export function useToolbarState() {
   const addRecentTool = useCallback((toolId) => {
     setRecentTools(prev => {
       const filtered = prev.filter(id => id !== toolId);
-      return [toolId, ...filtered].slice(0, 3);
+      return [toolId, ...filtered].slice(0, 2);
     });
+  }, []);
+
+  const scheduleIdleCollapse = useCallback(() => {
+    clearTimeout(toolsCollapseTimerRef.current);
+    if (toolsCollapsedRef.current) return;
+
+    toolsCollapseTimerRef.current = setTimeout(() => {
+      setToolsCollapsed(true);
+      toolsCollapsedRef.current = true;
+    }, 6000);
   }, []);
 
   const handleToggleTools = useCallback((e) => {
     e.stopPropagation();
-    if (toolsCollapsedRef.current) {
-      setToolsCollapsed(false);
-      toolsCollapsedRef.current = false;
-      clearTimeout(toolsCollapseTimerRef.current);
-      toolsCollapseTimerRef.current = setTimeout(() => {
-        setToolsCollapsed(true);
-        toolsCollapsedRef.current = true;
-      }, 4000);
-    } else {
-      clearTimeout(toolsCollapseTimerRef.current);
-      setToolsCollapsed(true);
-      toolsCollapsedRef.current = true;
-    }
-  }, []);
+    const nextCollapsed = !toolsCollapsedRef.current;
+    clearTimeout(toolsCollapseTimerRef.current);
+    setToolsCollapsed(nextCollapsed);
+    toolsCollapsedRef.current = nextCollapsed;
+    if (!nextCollapsed) scheduleIdleCollapse();
+  }, [scheduleIdleCollapse]);
+
+  const handleToolbarInteraction = useCallback(() => {
+    scheduleIdleCollapse();
+  }, [scheduleIdleCollapse]);
 
   const handleToolMouseEnter = useCallback(() => {
+    scheduleIdleCollapse();
     clearTimeout(labelPressTimerRef.current);
     labelPressTimerRef.current = setTimeout(() => setLabelsExpanded(true), 800);
-  }, []);
+  }, [scheduleIdleCollapse]);
 
   const handleToolMouseLeave = useCallback(() => {
     clearTimeout(labelPressTimerRef.current);
@@ -58,6 +65,6 @@ export function useToolbarState() {
     toolsCollapsedRef, toolsCollapseTimerRef,
     labelsExpanded,
     orderedToolIds, addRecentTool,
-    handleToggleTools, handleToolMouseEnter, handleToolMouseLeave,
+    handleToggleTools, handleToolbarInteraction, handleToolMouseEnter, handleToolMouseLeave,
   };
 }

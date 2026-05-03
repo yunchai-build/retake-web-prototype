@@ -12,7 +12,6 @@ import { useToolbarState } from '../hooks/useToolbarState';
 import { useHistory } from '../hooks/useHistory';
 import { useTextTool } from '../hooks/useTextTool';
 import StickerPanel from '../components/StickerPanel';
-import PhotoCropScreen from '../components/PhotoCropScreen';
 import TextToolOverlay from '../components/TextToolOverlay';
 import DrawingToolOverlays from '../components/DrawingToolOverlays';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -51,8 +50,6 @@ export default function InviterPage() {
   const tmLeftPanelRef = useRef(null);
   const eraserOpacitySliderRef = useRef(null);
   const galleryInputRef = useRef(null);
-  const photoCropInputRef = useRef(null);
-  const photoCropScreenRef = useRef(null);
   const introPhotoFlowRef = useRef(false);
 
   // ── UI visibility state ──
@@ -76,7 +73,6 @@ export default function InviterPage() {
   const [tmIn, setTmIn] = useState(false);
   const [tmBarMode, setTmBarMode] = useState(null); // 'doodle' | 'eraser' | null
   const [tmLeftIn, setTmLeftIn] = useState(false);
-  const [photoCropVisible, setPhotoCropVisible] = useState(false);
   const bottomBarOutBeforeStickerDragRef = useRef(false);
 
   // ── Hooks ──
@@ -119,7 +115,7 @@ export default function InviterPage() {
     toolsCollapsedRef, toolsCollapseTimerRef,
     labelsExpanded,
     orderedToolIds, addRecentTool,
-    handleToggleTools, handleToolMouseEnter, handleToolMouseLeave,
+    handleToggleTools, handleToolbarInteraction, handleToolMouseEnter, handleToolMouseLeave,
   } = useToolbarState();
 
   const {
@@ -153,6 +149,8 @@ export default function InviterPage() {
     txtFont, setTxtFont,
     txtColor, setTxtColor,
     txtSize, setTxtSize,
+    txtWrapWidth, setTxtWrapWidth,
+    txtOpacity, setTxtOpacity,
     txtAlign, setTxtAlign,
     textPreviewRef,
     enterTextTool, exitTextTool,
@@ -161,7 +159,7 @@ export default function InviterPage() {
     setExitBtnOut, setUndoRedoOut, setToolsOut, setBottomBarOut,
     toolsHideTimerRef, setToolsVisible,
     setTmIn,
-    toolsCollapseTimerRef, setToolsCollapsed, toolsCollapsedRef,
+    setToolsCollapsed, toolsCollapsedRef, toolsCollapseTimerRef,
     placeText: stickerSys.placeText,
   });
 
@@ -388,12 +386,8 @@ export default function InviterPage() {
     setToolsOut(false);
     setToolsCollapsed(false);
     toolsCollapsedRef.current = false;
-    setToolsVisible(true);
     clearTimeout(toolsCollapseTimerRef.current);
-    toolsCollapseTimerRef.current = setTimeout(() => {
-      setToolsCollapsed(true);
-      toolsCollapsedRef.current = true;
-    }, 2000);
+    setToolsVisible(true);
     setTimeout(() => {
       setExitBtnOut(false);
       setUndoRedoOut(false);
@@ -423,13 +417,9 @@ export default function InviterPage() {
     await delay(40);
     setToolsCollapsed(false);
     toolsCollapsedRef.current = false;
+    clearTimeout(toolsCollapseTimerRef.current);
     setToolsVisible(true);
     setToolsOut(false);
-    clearTimeout(toolsCollapseTimerRef.current);
-    toolsCollapseTimerRef.current = setTimeout(() => {
-      setToolsCollapsed(true);
-      toolsCollapsedRef.current = true;
-    }, 2000);
     await delay(60);
     setBottomBarVisible(true);
     setBottomBarOut(false);
@@ -440,9 +430,9 @@ export default function InviterPage() {
   const exitToIntro = useCallback(async () => {
     if (activeToolRef.current === 'text') exitTextTool(false);
     else if (activeToolRef.current) exitToolMode();
-    clearTimeout(toolsCollapseTimerRef.current);
     setToolsCollapsed(false);
     toolsCollapsedRef.current = false;
+    clearTimeout(toolsCollapseTimerRef.current);
     await delay(180);
     setExitBtnVisible(false);
     setUndoRedoVisible(false);
@@ -453,6 +443,7 @@ export default function InviterPage() {
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stickerSys.clearStickers();
     mainUndoStackRef.current = [];
     mainRedoStackRef.current = [];
     toolUndoStackRef.current = [];
@@ -464,7 +455,7 @@ export default function InviterPage() {
     setIntroCardVisible(true);
     setEditorVisible(false);
   }, [exitToolMode, exitTextTool, syncHistoryBtns, setToolsCollapsed, toolsCollapsedRef, toolsCollapseTimerRef,
-      mainUndoStackRef, mainRedoStackRef, toolUndoStackRef, toolRedoStackRef]);
+      mainUndoStackRef, mainRedoStackRef, toolUndoStackRef, toolRedoStackRef, stickerSys]);
 
   // ── Body layout lock ──
   useEffect(() => {
@@ -525,12 +516,6 @@ export default function InviterPage() {
     else exitToolMode();
   }, [exitToolMode, exitTextTool]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleToolGallery = useCallback(() => {
-    addRecentTool('gallery');
-    exitCurrentTool(true);
-    setTimeout(() => { if (photoCropInputRef.current) photoCropInputRef.current.click(); }, 50);
-  }, [exitCurrentTool, addRecentTool]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const handleBgGallery = useCallback(() => {
     if (galleryInputRef.current) galleryInputRef.current.click();
   }, []);
@@ -538,29 +523,6 @@ export default function InviterPage() {
   const handleProceedToStep3 = useCallback(() => {
     showToast('Step 3 next');
   }, [showToast]);
-
-  const handlePhotoCropChange = useCallback((e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-    const url = URL.createObjectURL(file);
-    setPhotoCropVisible(true);
-    setScrimVisible(true);
-    requestAnimationFrame(() => {
-      photoCropScreenRef.current?.open(url);
-    });
-  }, [setScrimVisible]);
-
-  const handlePhotoCropClose = useCallback(() => {
-    setPhotoCropVisible(false);
-    setScrimVisible(false);
-  }, [setScrimVisible]);
-
-  const handlePhotoCropApply = useCallback((dataUrl, w, h) => {
-    setPhotoCropVisible(false);
-    setScrimVisible(false);
-    stickerSys.placeSticker(dataUrl, w, h);
-  }, [stickerSys, setScrimVisible]);
 
   const handleToolDownload = useCallback(() => {
     exitCurrentTool(true);
@@ -627,9 +589,8 @@ export default function InviterPage() {
   const handleScrimClick = useCallback(() => {
     if (editNameVisible) { saveEditName(); return; }
     if (sharePanelVisible) { setSharePanelVisible(false); setScrimVisible(false); }
-    if (photoCropVisible) { setPhotoCropVisible(false); setScrimVisible(false); return; }
     if (stickerSys.stickerPanelVisible) stickerSys.closePanel();
-  }, [editNameVisible, saveEditName, sharePanelVisible, setSharePanelVisible, photoCropVisible, stickerSys]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editNameVisible, saveEditName, sharePanelVisible, setSharePanelVisible, stickerSys]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleEraserOpacityInput = useCallback((e) => {
     eraserOpacityRef.current = parseInt(e.target.value) / 100;
@@ -699,11 +660,11 @@ export default function InviterPage() {
         orderedToolIds={orderedToolIds}
         onToolText={handleToolText}
         onToolStickers={handleToolStickers}
-        onToolGallery={handleToolGallery}
         onToolDoodle={handleToolDoodle}
         onToolEraser={handleToolEraser}
         onToolDownload={handleToolDownload}
         onToggle={handleToggleTools}
+        onInteraction={handleToolbarInteraction}
         onToolMouseEnter={handleToolMouseEnter}
         onToolMouseLeave={handleToolMouseLeave}
       />
@@ -786,25 +747,13 @@ export default function InviterPage() {
         txtFont={txtFont} setTxtFont={setTxtFont}
         txtColor={txtColor} setTxtColor={setTxtColor}
         txtSize={txtSize} setTxtSize={setTxtSize}
+        txtWrapWidth={txtWrapWidth} setTxtWrapWidth={setTxtWrapWidth}
+        txtOpacity={txtOpacity} setTxtOpacity={setTxtOpacity}
         txtAlign={txtAlign} setTxtAlign={setTxtAlign}
         onConfirm={() => exitTextTool(true)}
       />
 
       <StickerPanel sys={stickerSys} />
-
-      <input
-        type="file"
-        ref={photoCropInputRef}
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={handlePhotoCropChange}
-      />
-      <PhotoCropScreen
-        ref={photoCropScreenRef}
-        visible={photoCropVisible}
-        onClose={handlePhotoCropClose}
-        onApply={handlePhotoCropApply}
-      />
 
     </div>
   );

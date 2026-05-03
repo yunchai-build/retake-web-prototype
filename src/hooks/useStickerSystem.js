@@ -39,6 +39,28 @@ function emojiToDataURL(emoji) {
   return c.toDataURL();
 }
 
+function wrapCanvasText(ctx, text, maxWidth) {
+  return text.split('\n').flatMap(paragraph => {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return [''];
+    const lines = [];
+    let line = '';
+
+    words.forEach(word => {
+      const test = line ? `${line} ${word}` : word;
+      if (ctx.measureText(test).width <= maxWidth || !line) {
+        line = test;
+        return;
+      }
+      lines.push(line);
+      line = word;
+    });
+
+    if (line) lines.push(line);
+    return lines;
+  });
+}
+
 // ── MediaPipe lazy loader ──
 let _nsMpSeg = null;
 let _nsMpErr = false;
@@ -125,18 +147,28 @@ export function useStickerSystem({
   const nsLassoDownRef = useRef(false);
   const nsLassoRAFRef  = useRef(null);
   const nsLassoDashRef = useRef(0);
+  const nsPhaseRef     = useRef('select');
+  const nsSelectionModeRef = useRef('freehand');
   const nsRefModeRef   = useRef('pen');
   const nsOpacityRef   = useRef(100);
   const nsBrushRRef    = useRef(16);
   const nsBrushDownRef = useRef(false);
   const nsBrushCollapseTimerRef = useRef(null);
   const nsBrushDraggingRef = useRef(false);
+  const nsShapeDownRef = useRef(false);
+  const nsShapeStartRef = useRef(null);
 
   // ── React state ──
   const [stickerTab, setStickerTab]             = useState('recents');
   const [stickerLibrary, setStickerLibrary]     = useState([]);
   const [stickerPanelVisible, setStickerPanelVisible] = useState(false);
   const [newStickerVisible, setNewStickerVisible] = useState(false);
+  const [nsLassoCanConfirm, setNsLassoCanConfirm] = useState(false);
+  const [nsPhase, setNsPhase] = useState('select');
+  const [nsSelectionMode, setNsSelectionMode] = useState('freehand');
+  const [nsDetecting, setNsDetecting] = useState(false);
+  const [nsRefMode, setNsRefMode] = useState('pen');
+  const [nsOpacity, setNsOpacity] = useState(100);
 
   useEffect(() => {
     onItemDragStartRef.current = onItemDragStart;
@@ -361,7 +393,7 @@ export function useStickerSystem({
   }, [ctxRef, selectSticker, setupStickerDrag]);
 
   // ── Place text ──
-  const placeText = useCallback((text, font, size, color, align) => {
+  const placeText = useCallback((text, font, size, color, align, wrapWidth = 280, opacity = 1) => {
     const f = TXT_FONTS[font] || TXT_FONTS.mono;
     const el = document.createElement('div');
     el.className = 'placed-text';
@@ -371,14 +403,16 @@ export function useStickerSystem({
     el.style.fontStyle  = f.style;
     el.style.fontSize   = size + 'px';
     el.style.color      = color;
+    el.style.opacity    = String(opacity);
     el.style.textAlign  = align;
     el.style.textShadow = '0 2px 18px rgba(0,0,0,0.55)';
 
     el.style.position   = 'fixed';
     el.style.visibility = 'hidden';
-    el.style.maxWidth   = '370px';
+    el.style.width      = `${wrapWidth}px`;
+    el.style.maxWidth   = `${wrapWidth}px`;
     document.body.appendChild(el);
-    const bw = el.offsetWidth;
+    const bw = wrapWidth;
     const bh = el.offsetHeight;
     el.remove();
     el.style.position = el.style.visibility = el.style.maxWidth = '';
@@ -391,7 +425,7 @@ export function useStickerSystem({
       id: Date.now(), el,
       type: 'text', text,
       fontFamily: f.family, fontWeight: f.weight, fontStyle: f.style,
-      fontSize: size, color, textAlign: align,
+      fontSize: size, color, textAlign: align, wrapWidth, opacity,
       x, y, scale: 1, rotation: 0,
       baseW: bw, baseH: bh,
     };
@@ -418,20 +452,22 @@ export function useStickerSystem({
       ctx.save();
       if (stk.type === 'text') {
         const eff  = stk.fontSize * stk.scale;
+        const maxW = (stk.wrapWidth || stk.baseW) * stk.scale;
         const cx   = stk.x + stk.baseW / 2;
         const cy   = stk.y + stk.baseH / 2;
         ctx.translate(cx, cy);
         ctx.rotate(stk.rotation * Math.PI / 180);
         ctx.font         = `${stk.fontStyle} ${stk.fontWeight} ${eff}px ${stk.fontFamily}`;
         ctx.fillStyle    = stk.color;
+        ctx.globalAlpha  = stk.opacity ?? 1;
         ctx.textBaseline = 'middle';
         ctx.shadowColor  = 'rgba(0,0,0,0.5)';
         ctx.shadowBlur   = 16;
         ctx.textAlign    = stk.textAlign;
-        const lines  = stk.text.split('\n');
+        const lines  = wrapCanvasText(ctx, stk.text, maxW);
         const lineH  = eff * 1.22;
-        const alignX = stk.textAlign === 'left'  ? -stk.baseW / 2 :
-                       stk.textAlign === 'right' ?  stk.baseW / 2 : 0;
+        const alignX = stk.textAlign === 'left'  ? -maxW / 2 :
+                       stk.textAlign === 'right' ?  maxW / 2 : 0;
         lines.forEach((line, i) => {
           ctx.fillText(line, alignX, (i - (lines.length - 1) / 2) * lineH);
         });
@@ -459,20 +495,22 @@ export function useStickerSystem({
       if (stk.type === 'text') {
         offCtx.save();
         const eff  = stk.fontSize * stk.scale;
+        const maxW = (stk.wrapWidth || stk.baseW) * stk.scale;
         const cx   = stk.x + stk.baseW / 2;
         const cy   = stk.y + stk.baseH / 2;
         offCtx.translate(cx, cy);
         offCtx.rotate(stk.rotation * Math.PI / 180);
         offCtx.font         = `${stk.fontStyle} ${stk.fontWeight} ${eff}px ${stk.fontFamily}`;
         offCtx.fillStyle    = stk.color;
+        offCtx.globalAlpha  = stk.opacity ?? 1;
         offCtx.textBaseline = 'middle';
         offCtx.shadowColor  = 'rgba(0,0,0,0.5)';
         offCtx.shadowBlur   = 16;
         offCtx.textAlign    = stk.textAlign;
-        const lines  = stk.text.split('\n');
+        const lines  = wrapCanvasText(offCtx, stk.text, maxW);
         const lineH  = eff * 1.22;
-        const alignX = stk.textAlign === 'left'  ? -stk.baseW / 2 :
-                       stk.textAlign === 'right' ?  stk.baseW / 2 : 0;
+        const alignX = stk.textAlign === 'left'  ? -maxW / 2 :
+                       stk.textAlign === 'right' ?  maxW / 2 : 0;
         lines.forEach((line, i) => {
           offCtx.fillText(line, alignX, (i - (lines.length - 1) / 2) * lineH);
         });
@@ -507,6 +545,129 @@ export function useStickerSystem({
   }, []);
 
   // ── NS screen helpers ──
+  const nsSetPhaseState = useCallback((phase) => {
+    nsPhaseRef.current = phase;
+    setNsPhase(phase);
+  }, []);
+
+  const nsSetConfirmAvailable = useCallback((available) => {
+    setNsLassoCanConfirm(available);
+    if (nsBtnConfirmRef.current) nsBtnConfirmRef.current.disabled = !available;
+  }, []);
+
+  const nsClearSelectionListeners = useCallback(() => {
+    const lc = nsLassoCanvasRef.current;
+    if (lc?._nsLassoClean) { lc._nsLassoClean(); lc._nsLassoClean = null; }
+    if (lc?._nsShapeClean) { lc._nsShapeClean(); lc._nsShapeClean = null; }
+  }, []);
+
+  const nsBuildPolyMask = useCallback((poly) => {
+    const ic = nsImageCanvasRef.current;
+    const draw = nsDrawRectRef.current;
+    if (!ic || !draw || poly.length < 3) return null;
+    const W = ic.width, H = ic.height;
+    const mask = new Uint8Array(W * H);
+    const x0 = Math.max(0, draw.x | 0);
+    const y0 = Math.max(0, draw.y | 0);
+    const x1 = Math.min(W - 1, Math.ceil(draw.x + draw.w));
+    const y1 = Math.min(H - 1, Math.ceil(draw.y + draw.h));
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        if (polyContains(x + 0.5, y + 0.5, poly)) mask[y * W + x] = 1;
+      }
+    }
+    return mask;
+  }, []);
+
+  const nsPaintMaskCircle = useCallback((x, y, radius, val = 1) => {
+    const ic = nsImageCanvasRef.current;
+    if (!ic || !nsMaskRef.current) return;
+    const W = ic.width, H = ic.height;
+    const r = Math.max(1, radius);
+    const r2 = r * r;
+    const x0 = Math.max(0, Math.floor(x - r));
+    const x1 = Math.min(W - 1, Math.ceil(x + r));
+    const y0 = Math.max(0, Math.floor(y - r));
+    const y1 = Math.min(H - 1, Math.ceil(y + r));
+    for (let py = y0; py <= y1; py++) {
+      for (let px = x0; px <= x1; px++) {
+        const dx = px - x;
+        const dy = py - y;
+        if (dx * dx + dy * dy <= r2) nsMaskRef.current[py * W + px] = val;
+      }
+    }
+  }, []);
+
+  const nsPaintMaskLine = useCallback((from, to, radius, val = 1) => {
+    if (!from || !to) return;
+    const dist = Math.hypot(to.x - from.x, to.y - from.y);
+    const steps = Math.max(1, Math.ceil(dist / Math.max(2, radius * 0.45)));
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      nsPaintMaskCircle(
+        from.x + (to.x - from.x) * t,
+        from.y + (to.y - from.y) * t,
+        radius,
+        val
+      );
+    }
+  }, [nsPaintMaskCircle]);
+
+  const nsDrawDragShapePreview = useCallback((a, b) => {
+    const lc = nsLassoCanvasRef.current;
+    if (!lc || !a || !b) return;
+    const ctx = lc.getContext('2d');
+    const x = Math.min(a.x, b.x);
+    const y = Math.min(a.y, b.y);
+    const w = Math.abs(b.x - a.x);
+    const h = Math.abs(b.y - a.y);
+    ctx.clearRect(0, 0, lc.width, lc.height);
+    if (w < 2 || h < 2) return;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([7, 4]);
+    ctx.beginPath();
+    if (nsSelectionModeRef.current === 'circle') {
+      ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+    } else {
+      ctx.rect(x, y, w, h);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }, []);
+
+  const nsBuildDragShapeMask = useCallback((a, b) => {
+    const ic = nsImageCanvasRef.current;
+    const draw = nsDrawRectRef.current;
+    if (!ic || !draw || !a || !b) return null;
+    const x = Math.min(a.x, b.x);
+    const y = Math.min(a.y, b.y);
+    const w = Math.abs(b.x - a.x);
+    const h = Math.abs(b.y - a.y);
+    if (w < 4 || h < 4) return null;
+    const mask = new Uint8Array(ic.width * ic.height);
+    const x0 = Math.max(0, draw.x | 0, Math.floor(x));
+    const y0 = Math.max(0, draw.y | 0, Math.floor(y));
+    const x1 = Math.min(ic.width - 1, Math.ceil(draw.x + draw.w), Math.ceil(x + w));
+    const y1 = Math.min(ic.height - 1, Math.ceil(draw.y + draw.h), Math.ceil(y + h));
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const rx = w / 2;
+    const ry = h / 2;
+    for (let py = y0; py <= y1; py++) {
+      for (let px = x0; px <= x1; px++) {
+        const inside = nsSelectionModeRef.current === 'circle'
+          ? (((px + 0.5 - cx) ** 2) / (rx ** 2) + ((py + 0.5 - cy) ** 2) / (ry ** 2)) <= 1
+          : true;
+        if (inside) mask[py * ic.width + px] = 1;
+      }
+    }
+    return mask;
+  }, []);
+
   const nsShowLoading = useCallback(() => {
     if (nsLoadingRef.current)        nsLoadingRef.current.style.display = '';
     if (nsBarLassoRef.current)       nsBarLassoRef.current.style.display = 'none';
@@ -631,6 +792,8 @@ export function useStickerSystem({
     const ic = nsImageCanvasRef.current;
     const mc = nsMaskCanvasRef.current;
     if (!ic || !mc) return;
+    nsSetPhaseState('refine');
+    setNsDetecting(false);
     mc.width  = ic.width;
     mc.height = ic.height;
     mc.style.display = 'block';
@@ -650,7 +813,7 @@ export function useStickerSystem({
       requestAnimationFrame(() => nsExpandBrushPanel());
     }
     nsEnableBrush();
-  }, [nsRenderOverlay, nsEnableBrush, nsExpandBrushPanel]);
+  }, [nsRenderOverlay, nsEnableBrush, nsExpandBrushPanel, nsSetPhaseState]);
 
   // ── ML detection ──
   const nsDetectInLasso = useCallback(async (poly) => {
@@ -673,7 +836,6 @@ export function useStickerSystem({
       sumX += x; sumY += y;
     });
     const cenX = sumX / poly.length, cenY = sumY / poly.length;
-    const normX = cenX / w, normY = cenY / h;
 
     function postProcess(subject) {
       const lcc    = keepLargestCC(subject, w, h);
@@ -723,6 +885,26 @@ export function useStickerSystem({
     fgAvg[0]/=fgPts.length; fgAvg[1]/=fgPts.length; fgAvg[2]/=fgPts.length;
     bgAvg[0]/=bgPts.length; bgAvg[1]/=bgPts.length; bgAvg[2]/=bgPts.length;
     const colorContrast = sqDist3(fgAvg, bgAvg);
+
+    let keyX = cenX;
+    let keyY = cenY;
+    let bestKeyScore = Infinity;
+    for (let y = bbY0; y <= bbY1; y += stride) {
+      for (let x = bbX0; x <= bbX1; x += stride) {
+        const i = y*w+x, p = i*4;
+        if (!inLasso[i] || px[p+3] === 0) continue;
+        const rgb = [px[p], px[p+1], px[p+2]];
+        const subjectScore = sqDist3(rgb, fgAvg) - sqDist3(rgb, bgAvg);
+        const centerBias = Math.hypot(x - cenX, y - cenY) * 0.08;
+        const score = subjectScore + centerBias;
+        if (score < bestKeyScore) {
+          bestKeyScore = score;
+          keyX = x;
+          keyY = y;
+        }
+      }
+    }
+    const normX = keyX / w, normY = keyY / h;
 
     // Path A: MediaPipe
     const seg = await nsGetSegmenter();
@@ -832,7 +1014,7 @@ export function useStickerSystem({
 
     const getPos = e => {
       const r = lc.getBoundingClientRect();
-      const t = e.touches ? e.touches[0] : e;
+      const t = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : e);
       return {
         x: (t.clientX - r.left) * (lc.width  / r.width),
         y: (t.clientY - r.top)  * (lc.height / r.height)
@@ -841,31 +1023,72 @@ export function useStickerSystem({
 
     const onStart = e => {
       e.preventDefault();
-      nsLassoPtsRef.current = [getPos(e)];
+      if (e.pointerId != null && lc.setPointerCapture) {
+        try { lc.setPointerCapture(e.pointerId); } catch (_) {}
+      }
+      const p = getPos(e);
+      nsLassoPtsRef.current = [p];
       nsLassoDownRef.current = true;
-      if (nsBtnConfirmRef.current) nsBtnConfirmRef.current.disabled = true;
+      nsSetConfirmAvailable(false);
+      if (nsSelectionModeRef.current === 'freehand') {
+        const ic = nsImageCanvasRef.current;
+        const mc = nsMaskCanvasRef.current;
+        if (!ic || !mc) return;
+        mc.width = ic.width;
+        mc.height = ic.height;
+        mc.style.display = 'block';
+        nsMaskRef.current = new Uint8Array(ic.width * ic.height);
+        nsPaintMaskCircle(p.x, p.y, nsBrushRRef.current, 1);
+        nsRenderOverlay();
+      }
     };
     const onMove = e => {
       if (!nsLassoDownRef.current) return;
       e.preventDefault();
-      nsLassoPtsRef.current.push(getPos(e));
-    };
-    const onEnd = () => {
-      if (!nsLassoDownRef.current) return;
-      nsLassoDownRef.current = false;
-      if (nsBtnConfirmRef.current) {
-        nsBtnConfirmRef.current.disabled = nsLassoPtsRef.current.length < 5;
+      const p = getPos(e);
+      const prev = nsLassoPtsRef.current[nsLassoPtsRef.current.length - 1];
+      nsLassoPtsRef.current.push(p);
+      if (nsSelectionModeRef.current === 'freehand') {
+        nsPaintMaskLine(prev, p, nsBrushRRef.current, 1);
+        nsRenderOverlay();
       }
     };
+    const onEnd = e => {
+      if (!nsLassoDownRef.current) return;
+      if (e?.pointerId != null && lc.releasePointerCapture) {
+        try { lc.releasePointerCapture(e.pointerId); } catch (_) {}
+      }
+      nsLassoDownRef.current = false;
+      const valid = nsLassoPtsRef.current.length >= 5;
+      if (nsSelectionModeRef.current === 'freehand' && valid) {
+        if (nsMaskRef.current) {
+          if (nsLassoRAFRef.current) { cancelAnimationFrame(nsLassoRAFRef.current); nsLassoRAFRef.current = null; }
+          nsPhase2();
+          return;
+        }
+      }
+      nsSetConfirmAvailable(valid);
+    };
 
-    lc.addEventListener('mousedown',  onStart);
-    lc.addEventListener('mousemove',  onMove);
-    lc.addEventListener('touchstart', onStart, {passive: false});
-    lc.addEventListener('touchmove',  onMove,  {passive: false});
-    lc.addEventListener('touchend',   onEnd);
-    document.addEventListener('mouseup', onEnd);
+    if (window.PointerEvent) {
+      lc.addEventListener('pointerdown', onStart);
+      lc.addEventListener('pointermove', onMove);
+      lc.addEventListener('pointerup', onEnd);
+      lc.addEventListener('pointercancel', onEnd);
+    } else {
+      lc.addEventListener('mousedown',  onStart);
+      lc.addEventListener('mousemove',  onMove);
+      lc.addEventListener('touchstart', onStart, {passive: false});
+      lc.addEventListener('touchmove',  onMove,  {passive: false});
+      lc.addEventListener('touchend',   onEnd);
+      document.addEventListener('mouseup', onEnd);
+    }
 
     lc._nsLassoClean = () => {
+      lc.removeEventListener('pointerdown', onStart);
+      lc.removeEventListener('pointermove', onMove);
+      lc.removeEventListener('pointerup', onEnd);
+      lc.removeEventListener('pointercancel', onEnd);
       lc.removeEventListener('mousedown',  onStart);
       lc.removeEventListener('mousemove',  onMove);
       lc.removeEventListener('touchstart', onStart);
@@ -873,82 +1096,163 @@ export function useStickerSystem({
       lc.removeEventListener('touchend',   onEnd);
       document.removeEventListener('mouseup', onEnd);
     };
-  }, []);
+  }, [nsPaintMaskCircle, nsPaintMaskLine, nsPhase2, nsRenderOverlay, nsSetConfirmAvailable]);
+
+  const nsInitShapeEvents = useCallback(() => {
+    const lc = nsLassoCanvasRef.current;
+    if (!lc) return;
+    if (lc._nsShapeClean) lc._nsShapeClean();
+
+    const canvasPoint = (e) => {
+      const rect = lc.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : (e.changedTouches ? e.changedTouches[0] : e);
+      return {
+        x: (t.clientX - rect.left) * (lc.width / rect.width),
+        y: (t.clientY - rect.top) * (lc.height / rect.height),
+      };
+    };
+    const onDown = (e) => {
+      e.preventDefault();
+      if (lc.setPointerCapture) {
+        try { lc.setPointerCapture(e.pointerId); } catch (_) {}
+      }
+      nsShapeDownRef.current = true;
+      nsShapeStartRef.current = canvasPoint(e);
+      nsSetConfirmAvailable(false);
+    };
+    const onMove = (e) => {
+      if (!nsShapeDownRef.current) return;
+      e.preventDefault();
+      nsDrawDragShapePreview(nsShapeStartRef.current, canvasPoint(e));
+    };
+    const onUp = (e) => {
+      if (!nsShapeDownRef.current) return;
+      if (lc.releasePointerCapture) {
+        try { lc.releasePointerCapture(e.pointerId); } catch (_) {}
+      }
+      e.preventDefault();
+      nsShapeDownRef.current = false;
+      const mask = nsBuildDragShapeMask(nsShapeStartRef.current, canvasPoint(e));
+      nsShapeStartRef.current = null;
+      if (!mask) {
+        lc.getContext('2d').clearRect(0, 0, lc.width, lc.height);
+        return;
+      }
+      nsMaskRef.current = mask;
+      nsPhase2();
+    };
+
+    lc.addEventListener('pointerdown', onDown);
+    lc.addEventListener('pointermove', onMove);
+    lc.addEventListener('pointerup', onUp);
+    lc.addEventListener('pointercancel', onUp);
+    lc.addEventListener('touchstart', onDown, { passive: false });
+    lc.addEventListener('touchmove', onMove, { passive: false });
+    lc.addEventListener('touchend', onUp);
+    lc._nsShapeClean = () => {
+      lc.removeEventListener('pointerdown', onDown);
+      lc.removeEventListener('pointermove', onMove);
+      lc.removeEventListener('pointerup', onUp);
+      lc.removeEventListener('pointercancel', onUp);
+      lc.removeEventListener('touchstart', onDown);
+      lc.removeEventListener('touchmove', onMove);
+      lc.removeEventListener('touchend', onUp);
+    };
+  }, [nsBuildDragShapeMask, nsDrawDragShapePreview, nsPhase2, nsSetConfirmAvailable]);
 
   // ── Draw image + start lasso ──
   const nsDrawImageAndStartLasso = useCallback(() => {
     const img = nsImageRef.current;
     if (!img) return;
 
+    nsSetPhaseState('select');
+    setNsDetecting(false);
     if (nsBarLassoRef.current)  nsBarLassoRef.current.style.display  = '';
     if (nsBarRefineRef.current) nsBarRefineRef.current.style.display = 'none';
-    if (nsBtnConfirmRef.current) nsBtnConfirmRef.current.disabled = true;
+    nsSetConfirmAvailable(false);
 
     requestAnimationFrame(() => {
       const ic = nsImageCanvasRef.current;
       const lc = nsLassoCanvasRef.current;
       if (!ic || !lc) return;
 
-      // Letterbox fit
+      // Fit the source photo to the full preview width. The preview itself
+      // starts after the shared chrome inset/header row, so the image never
+      // tucks under the top controls.
       const W = ic.parentElement?.offsetWidth  || 414;
       const H = ic.parentElement?.offsetHeight || 681;
-      const scale = Math.min(W / img.naturalWidth, H / img.naturalHeight);
+      const fitWidthScale = W / img.naturalWidth;
+      const fitHeightScale = H / img.naturalHeight;
+      const scale = Math.min(fitWidthScale, fitHeightScale);
       const dw = Math.round(img.naturalWidth  * scale);
       const dh = Math.round(img.naturalHeight * scale);
       const dx = Math.round((W - dw) / 2);
       const dy = Math.round((H - dh) / 2);
-      nsDrawRectRef.current = { x: dx, y: dy, w: dw, h: dh };
 
       ic.width = lc.width = W;
       ic.height = lc.height = H;
 
       const ictx = ic.getContext('2d');
       ictx.clearRect(0, 0, W, H);
-      ictx.drawImage(img, dx, dy, dw, dh);
 
       if (nsLoadingRef.current)    nsLoadingRef.current.style.display = 'none';
       ic.style.display = 'block';
       lc.style.display = 'block';
 
+      nsClearSelectionListeners();
       nsLassoPtsRef.current = [];
       nsLassoDownRef.current = false;
       if (nsLassoRAFRef.current) cancelAnimationFrame(nsLassoRAFRef.current);
+      nsLassoRAFRef.current = null;
+
+      nsDrawRectRef.current = { x: dx, y: dy, w: dw, h: dh };
+      ictx.drawImage(img, dx, dy, dw, dh);
+
+      if (nsSelectionModeRef.current === 'circle' || nsSelectionModeRef.current === 'rect') {
+        nsInitShapeEvents();
+        return;
+      }
+
       nsAnimateLasso();
       nsInitLassoEvents();
     });
-  }, [nsAnimateLasso, nsInitLassoEvents]);
+  }, [nsAnimateLasso, nsClearSelectionListeners, nsInitLassoEvents, nsInitShapeEvents, nsSetConfirmAvailable, nsSetPhaseState]);
 
-  // ── NS confirm lasso → detect ──
+  // ── NS confirm selection → mask/refine ──
   const nsConfirmLasso = useCallback(() => {
+    const mode = nsSelectionModeRef.current;
     if (nsLassoPtsRef.current.length < 5) return;
     const poly = nsLassoPtsRef.current.map(p => [p.x, p.y]);
     cancelAnimationFrame(nsLassoRAFRef.current); nsLassoRAFRef.current = null;
     if (nsLassoCanvasRef.current)   nsLassoCanvasRef.current.style.display = 'none';
     if (nsBarLassoRef.current)      nsBarLassoRef.current.style.display = 'none';
-    if (nsLoadingRef.current)       nsLoadingRef.current.style.display  = '';
-    nsDetectInLasso(poly);
-  }, [nsDetectInLasso]);
+    if (mode === 'magic') {
+      nsSetPhaseState('detecting');
+      setNsDetecting(true);
+      if (nsLoadingRef.current) nsLoadingRef.current.style.display = '';
+      nsDetectInLasso(poly);
+      return;
+    }
+    const mask = nsBuildPolyMask(poly);
+    if (!mask) return;
+    nsMaskRef.current = mask;
+    nsPhase2();
+  }, [nsBuildPolyMask, nsDetectInLasso, nsPhase2, nsSetPhaseState]);
 
   // ── NS back to lasso ──
   const nsBackToLasso = useCallback(() => {
     nsDisableBrush();
     nsMaskRef.current = null;
     if (nsMaskCanvasRef.current)    nsMaskCanvasRef.current.style.display    = 'none';
-    if (nsLassoCanvasRef.current)   nsLassoCanvasRef.current.style.display   = 'block';
     if (nsBtnRefineBackRef.current) nsBtnRefineBackRef.current.style.display = 'none';
     if (nsHeaderRef.current)        nsHeaderRef.current.style.display        = '';
     clearTimeout(nsBrushCollapseTimerRef.current);
     const bp = nsBrushPanelRef.current;
     if (bp) { bp.style.transform = 'translateX(-28px)'; bp.style.display = 'none'; }
-    nsLassoPtsRef.current = [];
-    nsLassoDownRef.current = false;
-    if (nsBtnConfirmRef.current) nsBtnConfirmRef.current.disabled = true;
     if (nsBarRefineRef.current) nsBarRefineRef.current.style.display = 'none';
     if (nsBarLassoRef.current)  nsBarLassoRef.current.style.display  = '';
-    if (nsLassoRAFRef.current) cancelAnimationFrame(nsLassoRAFRef.current);
-    nsAnimateLasso();
-    nsInitLassoEvents();
-  }, [nsDisableBrush, nsAnimateLasso, nsInitLassoEvents]);
+    nsDrawImageAndStartLasso();
+  }, [nsDisableBrush, nsDrawImageAndStartLasso]);
 
   // ── NS apply ──
   const nsApply = useCallback(() => {
@@ -971,6 +1275,7 @@ export function useStickerSystem({
         if (!nsMaskRef.current[maskIdx]) {
           d[(py * dw + px2) * 4 + 3] = 0;
         } else {
+          d[(py * dw + px2) * 4 + 3] = Math.round(d[(py * dw + px2) * 4 + 3] * (nsOpacityRef.current / 100));
           if (px2 < minX) minX = px2;
           if (px2 > maxX) maxX = px2;
           if (py < minY)  minY = py;
@@ -1011,7 +1316,7 @@ export function useStickerSystem({
     grid.innerHTML = '';
     const addCell = document.createElement('button');
     addCell.className = 'sp-add-cell';
-    addCell.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+    addCell.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="var(--icon-stroke-width)" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
     addCell.addEventListener('click', () => stickerPhotoInputRef.current?.click());
     grid.appendChild(addCell);
     const list = tab === 'recents'
@@ -1049,11 +1354,20 @@ export function useStickerSystem({
     nsDrawRectRef.current  = null;
     nsLassoPtsRef.current  = [];
     nsLassoDownRef.current = false;
+    nsPhaseRef.current     = 'select';
+    nsSelectionModeRef.current = 'freehand';
+    setNsPhase('select');
+    setNsSelectionMode('freehand');
+    setNsDetecting(false);
+    nsSetConfirmAvailable(false);
     nsRefModeRef.current   = 'pen';
     nsOpacityRef.current   = 100;
+    setNsRefMode('pen');
+    setNsOpacity(100);
     nsBrushDownRef.current = false;
 
     if (nsLassoRAFRef.current) { cancelAnimationFrame(nsLassoRAFRef.current); nsLassoRAFRef.current = null; }
+    nsClearSelectionListeners();
 
     // Reset canvases
     if (nsImageCanvasRef.current)   nsImageCanvasRef.current.style.display   = 'none';
@@ -1073,19 +1387,19 @@ export function useStickerSystem({
 
     setNewStickerVisible(true);
     nsGetSegmenter(); // warm up ML model
-
     const img = new Image();
     img.onload = () => { nsImageRef.current = img; nsDrawImageAndStartLasso(); };
     img.src = src;
-  }, [nsDrawImageAndStartLasso]);
+  }, [nsClearSelectionListeners, nsDrawImageAndStartLasso, nsSetConfirmAvailable]);
 
   // ── NS close ──
   const closeNewStickerScreen = useCallback((reopenPanel = true) => {
     setNewStickerVisible(false);
+    nsSetConfirmAvailable(false);
+    setNsDetecting(false);
     if (nsLassoRAFRef.current) { cancelAnimationFrame(nsLassoRAFRef.current); nsLassoRAFRef.current = null; }
     nsDisableBrush();
-    const lc = nsLassoCanvasRef.current;
-    if (lc?._nsLassoClean) { lc._nsLassoClean(); lc._nsLassoClean = null; }
+    nsClearSelectionListeners();
     if (nsImageCanvasRef.current)   nsImageCanvasRef.current.style.display   = 'none';
     if (nsMaskCanvasRef.current)    nsMaskCanvasRef.current.style.display    = 'none';
     if (nsLassoCanvasRef.current)   nsLassoCanvasRef.current.style.display   = 'none';
@@ -1099,9 +1413,9 @@ export function useStickerSystem({
     nsMaskRef.current     = null;
     nsDrawRectRef.current = null;
     if (reopenPanel) {
-      setTimeout(() => { renderStickerContent(); setStickerPanelVisible(true); }, 200);
+      setTimeout(() => { renderStickerContent(); setStickerPanelVisible(true); setScrimVisible(true); }, 200);
     }
-  }, [nsDisableBrush, renderStickerContent]);
+  }, [nsClearSelectionListeners, nsDisableBrush, nsSetConfirmAvailable, renderStickerContent, setScrimVisible]);
 
   // ── File input handler ── now opens NS screen (lasso flow)
   const handleStickerPhotoChange = useCallback((e) => {
@@ -1112,6 +1426,26 @@ export function useStickerSystem({
     openNewStickerScreen(url);
     e.target.value = '';
   }, [closePanel, openNewStickerScreen]);
+
+  const nsSetSelectionMode = useCallback((mode) => {
+    nsSelectionModeRef.current = mode;
+    setNsSelectionMode(mode);
+    nsDrawImageAndStartLasso();
+  }, [nsDrawImageAndStartLasso]);
+
+  const nsSetRefMode = useCallback((mode) => {
+    nsRefModeRef.current = mode;
+    setNsRefMode(mode);
+  }, []);
+
+  const nsHandleOpacityInput = useCallback((e) => {
+    const val = +e.target.value;
+    nsOpacityRef.current = val;
+    setNsOpacity(val);
+    e.target.style.setProperty('--fill', val + '%');
+    if (nsOpacityValRef.current) nsOpacityValRef.current.textContent = val + '%';
+    if (nsMaskCanvasRef.current) nsMaskCanvasRef.current.style.opacity = String(val / 100);
+  }, []);
 
   // ── Build emoji grid ──
   const buildEmojiGrid = useCallback(() => {
@@ -1306,6 +1640,12 @@ export function useStickerSystem({
     stickerLibrary,
     stickerPanelVisible,
     newStickerVisible,
+    nsLassoCanConfirm,
+    nsPhase,
+    nsSelectionMode,
+    nsDetecting,
+    nsRefMode,
+    nsOpacity,
     // Panel control
     openPanel,
     closePanel,
@@ -1314,6 +1654,9 @@ export function useStickerSystem({
     nsConfirmLasso,
     nsBackToLasso,
     nsApply,
+    nsSetSelectionMode,
+    nsSetRefMode,
+    nsHandleOpacityInput,
     // Sticker ops
     placeSticker,
     placeText,

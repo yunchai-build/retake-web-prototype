@@ -1,4 +1,6 @@
 import React from 'react';
+import GlassIconButton from './GlassIconButton.jsx';
+import ToolIcon from './ToolIcon.jsx';
 
 const SWATCH_COLORS = [
   { color: '#FFFFFF', label: 'White' },
@@ -46,18 +48,10 @@ export default function DrawingToolOverlays({
     <>
       {/* ── Undo / redo ── */}
       <div id="tmUndoRedo" className={`tool-mode-el${tmIn ? ' tm-in' : ''}`}>
-        <button className="history-btn" id="tmBtnUndo" aria-label="Undo"
-          disabled={tmUndoBtnDisabled} onClick={onUndo}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 7v6h6" /><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13" />
-          </svg>
-        </button>
-        <button className="history-btn" id="tmBtnRedo" aria-label="Redo"
-          disabled={tmRedoBtnDisabled} onClick={onRedo}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 7v6h-6" /><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3L21 13" />
-          </svg>
-        </button>
+        <GlassIconButton className="history-btn" id="tmBtnUndo" icon="undo" label="Undo"
+          contained={false} disabled={tmUndoBtnDisabled} onClick={onUndo} />
+        <GlassIconButton className="history-btn" id="tmBtnRedo" icon="redo" label="Redo"
+          contained={false} disabled={tmRedoBtnDisabled} onClick={onRedo} />
       </div>
 
       {/* ── Done pill ── */}
@@ -67,9 +61,7 @@ export default function DrawingToolOverlays({
         aria-label="Done"
         onClick={onDone}
       >
-        <svg width="28" height="28" viewBox="0 0 22 22" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="4,12 9,17 18,5"/>
-        </svg>
+        <ToolIcon type="check" />
       </button>
 
       {/* ── Left size-track panel ── */}

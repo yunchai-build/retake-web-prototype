@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { TXT_FONTS, TXT_PALETTE } from '../hooks/useTextTool';
+import OpacitySlider from './OpacitySlider.jsx';
+import SizeSliderRail from './SizeSliderRail.jsx';
 
 export default function TextToolOverlay({
   active,
@@ -7,12 +9,14 @@ export default function TextToolOverlay({
   txtFont, setTxtFont,
   txtColor, setTxtColor,
   txtSize, setTxtSize,
+  txtWrapWidth, setTxtWrapWidth,
+  txtOpacity, setTxtOpacity,
   txtAlign, setTxtAlign,
   onConfirm,
 }) {
-  const sizeSliderRef = useRef(null);
+  const opacitySliderRef = useRef(null);
 
-  // Apply live font/color/size/align to preview element
+  // Apply live font/color/size/wrap/opacity/align to preview element
   useEffect(() => {
     if (!textPreviewRef.current) return;
     const f = TXT_FONTS[txtFont];
@@ -22,16 +26,18 @@ export default function TextToolOverlay({
     p.style.fontStyle  = f.style;
     p.style.fontSize   = txtSize + 'px';
     p.style.color      = txtColor;
+    p.style.opacity    = String(txtOpacity / 100);
+    p.style.width      = txtWrapWidth + 'px';
+    p.style.maxWidth   = txtWrapWidth + 'px';
     p.style.textAlign  = txtAlign;
-  }, [textPreviewRef, txtFont, txtSize, txtColor, txtAlign]);
+  }, [textPreviewRef, txtFont, txtSize, txtColor, txtWrapWidth, txtOpacity, txtAlign]);
 
-  // Sync size slider gradient fill
+  // Sync opacity slider gradient fill
   useEffect(() => {
-    if (sizeSliderRef.current) {
-      const pct = ((txtSize - 18) / (96 - 18) * 100).toFixed(1) + '%';
-      sizeSliderRef.current.style.setProperty('--fill', pct);
+    if (opacitySliderRef.current) {
+      opacitySliderRef.current.style.setProperty('--fill', `${txtOpacity}%`);
     }
-  }, [txtSize]);
+  }, [txtOpacity]);
 
   const handleOverlayPointerDown = useCallback((e) => {
     if (e.target === e.currentTarget) onConfirm();
@@ -61,8 +67,21 @@ export default function TextToolOverlay({
         />
       </div>
 
+      <SizeSliderRail
+        active={active}
+        className="text-wrap-rail"
+        value={txtWrapWidth}
+        min={140}
+        max={370}
+        ariaLabel="Text line width"
+        onChange={e => {
+          setTxtWrapWidth(Number(e.target.value));
+          textPreviewRef.current?.focus();
+        }}
+      />
+
       <div className={`tm-text-bar${active ? ' txt-active' : ''}`}>
-        {/* Row 1: font chips + size slider */}
+        {/* Row 1: font chips + opacity slider */}
         <div className="txt-row">
           <div className="txt-fonts">
             <button
@@ -82,17 +101,18 @@ export default function TextToolOverlay({
             >S</button>
           </div>
           <div className="tm-divider" />
-          <span className="txt-size-lbl">Size</span>
-          <input
-            ref={sizeSliderRef}
-            type="range"
-            id="txtSizeSlider"
-            min="18" max="96"
-            value={txtSize}
+          <OpacitySlider
+            inline
+            inputId="txtOpacitySlider"
+            inputRef={opacitySliderRef}
+            valueLabel={`${txtOpacity}%`}
             style={{ flex: 1 }}
-            onChange={e => setTxtSize(Number(e.target.value))}
+            value={txtOpacity}
+            min={10}
+            max={100}
+            onInput={e => setTxtOpacity(Number(e.target.value))}
+            onChange={e => setTxtOpacity(Number(e.target.value))}
           />
-          <span className="tm-val">{txtSize}</span>
         </div>
 
         {/* Row 2: color swatches + alignment */}
@@ -118,7 +138,7 @@ export default function TextToolOverlay({
               className={`txt-align-btn${txtAlign === 'left' ? ' active' : ''}`}
               onClick={() => { setTxtAlign('left'); textPreviewRef.current?.focus(); }}
             >
-              <svg width="16" height="13" viewBox="0 0 16 13" fill="none" strokeWidth="1.8" strokeLinecap="round">
+              <svg width="16" height="13" viewBox="0 0 16 13" fill="none" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round">
                 <line x1="1" y1="2" x2="15" y2="2"/><line x1="1" y1="6.5" x2="10" y2="6.5"/><line x1="1" y1="11" x2="13" y2="11"/>
               </svg>
             </button>
@@ -126,7 +146,7 @@ export default function TextToolOverlay({
               className={`txt-align-btn${txtAlign === 'center' ? ' active' : ''}`}
               onClick={() => { setTxtAlign('center'); textPreviewRef.current?.focus(); }}
             >
-              <svg width="16" height="13" viewBox="0 0 16 13" fill="none" strokeWidth="1.8" strokeLinecap="round">
+              <svg width="16" height="13" viewBox="0 0 16 13" fill="none" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round">
                 <line x1="1" y1="2" x2="15" y2="2"/><line x1="3.5" y1="6.5" x2="12.5" y2="6.5"/><line x1="2" y1="11" x2="14" y2="11"/>
               </svg>
             </button>
@@ -134,7 +154,7 @@ export default function TextToolOverlay({
               className={`txt-align-btn${txtAlign === 'right' ? ' active' : ''}`}
               onClick={() => { setTxtAlign('right'); textPreviewRef.current?.focus(); }}
             >
-              <svg width="16" height="13" viewBox="0 0 16 13" fill="none" strokeWidth="1.8" strokeLinecap="round">
+              <svg width="16" height="13" viewBox="0 0 16 13" fill="none" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round">
                 <line x1="1" y1="2" x2="15" y2="2"/><line x1="6" y1="6.5" x2="15" y2="6.5"/><line x1="3" y1="11" x2="15" y2="11"/>
               </svg>
             </button>

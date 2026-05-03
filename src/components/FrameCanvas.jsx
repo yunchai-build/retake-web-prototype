@@ -15,7 +15,6 @@ export default function FrameCanvas({
         <div id="checkerBg"></div>
         <canvas id="editCanvas" ref={canvasRef} width="414" height="736" className="no-tool" />
         <canvas id="selectionCanvas" ref={selectionCanvasRef} width="414" height="736" />
-        <p className="watermark">Made with Retake</p>
         <div id="brushCursor" ref={brushCursorRef}>
           <svg id="brushCursorSvg" ref={brushCursorSvgRef} viewBox="-20 -20 40 40" fill="none">
             <circle id="brushCursorCircle" ref={brushCursorCircleRef} cx="0" cy="0" r="14"

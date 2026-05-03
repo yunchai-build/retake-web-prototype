@@ -7,6 +7,7 @@ import { useStickerSystem } from '../hooks/useStickerSystem.js';
 import StickerPanel from '../components/StickerPanel.jsx';
 import DrawingToolOverlays from '../components/DrawingToolOverlays.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import InviteeToolbar from '../components/InviteeToolbar.jsx';
 
 const TIMER_STEPS = [0, 3, 6, 10];
 const DEFAULT_FRAME_NAME = 'babe, wake up';
@@ -100,7 +101,6 @@ export default function InviteePage() {
   const [countdownNum, setCountdownNum] = useState('');
   const [timerValue, setTimerValue] = useState(0);
   const [cutoutGlowHidden, setCutoutGlowHidden] = useState(false);
-  const [watermarkOpacity, setWatermarkOpacity] = useState(1);
   const [camPopupVisible, setCamPopupVisible] = useState(false);
 
   // S6 states
@@ -400,7 +400,7 @@ export default function InviteePage() {
   const shareImage = useCallback((blob) => {
     if (navigator.share) {
       const file = new File([blob], 'retake.jpg', { type: 'image/jpeg' });
-      const data = { title: 'My Retake!', text: `${frameName} — Made with Retake!` };
+      const data = { title: 'My Retake!', text: frameName };
       const p = (navigator.canShare && navigator.canShare({ files: [file] }))
         ? navigator.share({ ...data, files: [file] })
         : navigator.share(data);
@@ -610,7 +610,6 @@ export default function InviteePage() {
 
   const enterCameraUI = useCallback(async () => {
     setScreen4CardVisible(false);
-    setWatermarkOpacity(0);
     await delay(280);
     setCamTopBarVisible(true);
     setCamBottomBarVisible(true);
@@ -772,7 +771,6 @@ export default function InviteePage() {
     setCamTopBarMode('');
     setCamBottomBarVisible(false);
     setCamTopGradientVisible(false);
-    setWatermarkOpacity(1);
     setCutoutGlowHidden(false);
     setTapHintVisible(false);
     setTapHintHiding(false);
@@ -998,7 +996,6 @@ export default function InviteePage() {
     if (videoRef.current) { videoRef.current.srcObject = null; videoRef.current.classList.remove('active'); }
     setCamTopGradientVisible(false);
     setScreenClass(c => c.replace('screen4-bg', ''));
-    setWatermarkOpacity(1);
     setCutoutGlowHidden(false);
     setTapHintVisible(false); setTapHintHiding(false);
   }, [showConfirm]);
@@ -1270,12 +1267,6 @@ export default function InviteePage() {
         <p className="screen4-subtitle">Tap to start</p>
       </div>
 
-      {/* Watermark */}
-      <p className="watermark" id="watermark"
-        style={{ opacity: watermarkOpacity, transition: 'opacity 0.3s ease' }}>
-        Made with Retake! ✦
-      </p>
-
       {/* Camera top gradient */}
       <div className={`cam-top-gradient${camTopGradientVisible ? ' visible' : ''}`} id="camTopGradient"></div>
 
@@ -1283,7 +1274,7 @@ export default function InviteePage() {
       <div className={camTopBarClass} id="camTopBar">
         <button className="cam-btn" id="btnCloseCamera" aria-label="Close"
           onClick={handleCloseCamera}>
-          <svg width="26" height="26" viewBox="0 0 22 22" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+          <svg width="26" height="26" viewBox="0 0 22 22" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round">
             <line x1="4" y1="4" x2="18" y2="18" /><line x1="18" y1="4" x2="4" y2="18" />
           </svg>
         </button>
@@ -1295,7 +1286,7 @@ export default function InviteePage() {
           </button>
           <button className={`cam-btn${timerValue > 0 ? ' timer-active' : ''}`} id="btnTimer"
             aria-label="Timer" onClick={handleTimerClick}>
-            <svg width="26" height="26" viewBox="0 0 22 22" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round">
+            <svg width="26" height="26" viewBox="0 0 22 22" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round">
               <circle cx="11" cy="13" r="7" /><path d="M11 10v3l2 1.5" /><path d="M8.5 2.5h5M11 2.5V5" />
             </svg>
             <span className={`timer-badge${timerValue > 0 ? '' : ''}`} id="timerBadge"
@@ -1306,7 +1297,7 @@ export default function InviteePage() {
         </div>
         <button className="cam-btn" id="btnTakePhotoInstead" aria-label="Take photo instead"
           onClick={handleTakePhotoInstead}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
             <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
             <circle cx="12" cy="13" r="4" />
           </svg>
@@ -1314,14 +1305,14 @@ export default function InviteePage() {
         </button>
         <button className="cam-btn" id="btnRetakePhoto" aria-label="Retake photo"
           onClick={handleRetakePhoto}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 12a9 9 0 109-9 9 9 0 00-6.37 2.63" /><polyline points="3 3 3 9 9 9" />
           </svg>
           Retake photo
         </button>
         <button className="cam-btn" id="btnFlipCam" aria-label="Flip camera"
           onClick={handleFlipCam}>
-          <svg width="26" height="26" viewBox="0 0 22 22" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="26" height="26" viewBox="0 0 22 22" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2 4v5h5" /><path d="M20 18v-5h-5" />
             <path d="M18.49 8A8 8 0 005.5 5.5L2 9" /><path d="M3.51 14a8 8 0 0013 3L20 13" />
           </svg>
@@ -1360,7 +1351,7 @@ export default function InviteePage() {
         </div>
         <button className="cam-proceed-btn" id="btnProceed" aria-label="Proceed"
           onClick={handleProceed}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1A1A2E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1A1A2E" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="11 15 16 10 11 5" /><polyline points="5 15 10 10 5 5" />
           </svg>
         </button>
@@ -1375,7 +1366,7 @@ export default function InviteePage() {
         <div className="sheet-handle"></div>
         <div className="sheet-inner">
           <div className="sheet-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
               <circle cx="12" cy="13" r="4" />
             </svg>
@@ -1416,77 +1407,24 @@ export default function InviteePage() {
       {/* S6 Exit button */}
       <button className={`s6-exit-btn${s6ExitVisible ? ' visible' : ''}`} id="s6ExitBtn"
         aria-label="Exit session" onClick={handleS6ExitClick}>
-        <svg width="26" height="26" viewBox="0 0 22 22" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+        <svg width="26" height="26" viewBox="0 0 22 22" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round">
           <line x1="4" y1="4" x2="18" y2="18" /><line x1="18" y1="4" x2="4" y2="18" />
         </svg>
       </button>
 
-      {/* S6 Right tools */}
-      <div className={`s6-tools${s6ToolsVisible ? ' visible' : ''}${s6ToolsOut ? ' out' : ''}${labelsExpanded ? ' labels-expanded' : ''}`}
-        id="s6Tools">
-        <button className="s6-tool-btn" id="s6BtnText" aria-label="Text"
-          onClick={handleS6ToolText}
-          onMouseEnter={handleToolMouseEnter} onMouseLeave={handleToolMouseLeave}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="4" y1="5" x2="20" y2="5" /><line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="9" y1="19" x2="15" y2="19" />
-          </svg>
-          <span className="tool-label">Text</span>
-        </button>
-        <button className="s6-tool-btn" id="s6BtnStickers" aria-label="Stickers"
-          onClick={handleS6ToolStickers}
-          onMouseEnter={handleToolMouseEnter} onMouseLeave={handleToolMouseLeave}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ overflow: 'visible' }}>
-            <defs>
-              <mask id="smileyMask2">
-                <rect width="24" height="24" fill="white" />
-                <circle cx="9" cy="10" r="1.5" fill="black" />
-                <circle cx="15" cy="10" r="1.5" fill="black" />
-                <path d="M8 14.5 Q12 18 16 14.5" stroke="black" strokeWidth="2" strokeLinecap="round" fill="none" />
-              </mask>
-            </defs>
-            <circle cx="11" cy="13" r="9.5" fill="white" mask="url(#smileyMask2)" />
-            <line x1="18" y1="4" x2="23" y2="4" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            <line x1="20.5" y1="1.5" x2="20.5" y2="6.5" stroke="white" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <span className="tool-label">Stickers</span>
-        </button>
-        <button className="s6-tool-btn" id="s6BtnGalleryEdit" aria-label="Photo"
-          onClick={handleS6ToolGallery}
-          onMouseEnter={handleToolMouseEnter} onMouseLeave={handleToolMouseLeave}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ overflow: 'visible' }}>
-            <defs><clipPath id="photoClip2"><rect x="3" y="4" width="15" height="15" rx="2" /></clipPath></defs>
-            <g clipPath="url(#photoClip2)" fill="white">
-              <circle cx="7.5" cy="9" r="1.8" />
-              <path d="M3 19 L8 12.5 L10.5 15.5 L13.5 11.5 L18 19 Z" />
-            </g>
-            <rect x="3" y="4" width="15" height="15" rx="2" stroke="white" strokeWidth="1.5" fill="none" />
-            <line x1="18" y1="4" x2="23" y2="4" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            <line x1="20.5" y1="1.5" x2="20.5" y2="6.5" stroke="white" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <span className="tool-label">Photo</span>
-        </button>
-        <button className={`s6-tool-btn${activeTool === 'doodle' ? ' active' : ''}`}
-          id="s6BtnPen" aria-label="Draw"
-          onClick={handleS6ToolPen}
-          onMouseEnter={handleToolMouseEnter} onMouseLeave={handleToolMouseLeave}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-            <line x1="15" y1="5" x2="19" y2="9" />
-          </svg>
-          <span className="tool-label">Draw</span>
-        </button>
-        <button className="s6-tool-btn" id="s6BtnDownload" aria-label="Save"
-          onClick={handleS6BtnDownload}
-          onMouseEnter={handleToolMouseEnter} onMouseLeave={handleToolMouseLeave}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 3v11" />
-            <polyline points="8 10 12 14 16 10" />
-            <line x1="5" y1="19" x2="19" y2="19" />
-          </svg>
-          <span className="tool-label">Save</span>
-        </button>
-      </div>
+      <InviteeToolbar
+        visible={s6ToolsVisible}
+        out={s6ToolsOut}
+        labelsExpanded={labelsExpanded}
+        activeTool={activeTool}
+        onText={handleS6ToolText}
+        onStickers={handleS6ToolStickers}
+        onGallery={handleS6ToolGallery}
+        onDraw={handleS6ToolPen}
+        onDownload={handleS6BtnDownload}
+        onToolMouseEnter={handleToolMouseEnter}
+        onToolMouseLeave={handleToolMouseLeave}
+      />
 
       {/* Drawing tool overlays (undo/redo, done, left panel, pen bar) */}
       <DrawingToolOverlays
@@ -1510,7 +1448,7 @@ export default function InviteePage() {
       <div className={`s6-bottom-bar${s6BottomBarVisible ? ' visible' : ''}`} id="s6BottomBar">
         <button className="s6-circle-btn" id="s6RetakeBtn" aria-label="Back"
           onClick={handleS6RetakeClick}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 15 4 10 9 5" /><polyline points="15 15 10 10 15 5" />
           </svg>
         </button>
@@ -1524,7 +1462,7 @@ export default function InviteePage() {
           </button>
           <button className="s6-circle-btn" id="s6ContribBtn" aria-label="Copy link"
             onClick={handleS6ContribClick}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
             </svg>
           </button>
@@ -1545,7 +1483,7 @@ export default function InviteePage() {
           <span className="s7-pop-code" id="s7PopCode">{s7PopCode}</span>
           <button className="s7-pop-copy-btn" id="s7PopCopyBtn" aria-label="Copy code"
             onClick={handleS7PopCopyClick}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A1A2E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A1A2E" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
             </svg>
           </button>

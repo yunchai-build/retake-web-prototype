@@ -1,4 +1,5 @@
 import React from 'react';
+import GlassActionPill from './GlassActionPill.jsx';
 
 /**
  * ConfirmDialog — shared modal confirmation dialog.
@@ -34,22 +35,24 @@ export default function ConfirmDialog({
         id="confirmDialog"
       >
         <p className="confirm-message" id="confirmMessage">{confirmMsg}</p>
-        <div className="confirm-buttons">
-          <button
-            className="confirm-btn confirm-btn-cancel"
-            id="confirmCancel"
-            onClick={onCancel}
-          >
-            {cancelLabel}
-          </button>
-          <button
-            className={`confirm-btn confirm-btn-ok${confirmDanger ? ' danger' : ''}`}
-            id="confirmOk"
-            onClick={onConfirm}
-          >
-            {confirmOkLabel}
-          </button>
-        </div>
+        <GlassActionPill
+          className="confirm-actions"
+          ariaLabel="Confirmation actions"
+          actions={[
+            {
+              id: 'confirmCancel',
+              label: cancelLabel,
+              variant: 'secondary',
+              onClick: onCancel,
+            },
+            {
+              id: 'confirmOk',
+              label: confirmOkLabel,
+              variant: confirmDanger ? 'danger' : 'primary',
+              onClick: onConfirm,
+            },
+          ]}
+        />
       </div>
     </>
   );

@@ -73,24 +73,6 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 
-/* ─────────────────────────────────────────────────────
-   SHARED: WATERMARK
-───────────────────────────────────────────────────── */
-.watermark {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 800px;
-  color: rgba(255,255,255,0.5);
-  font-family: 'Bedstead', monospace;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.3);
-  pointer-events: none;
-}
-
-
 /* ═════════════════════════════════════════════════════
    SCREEN 1 — retake! balloon logo
 ═════════════════════════════════════════════════════ */
@@ -814,29 +796,31 @@ button { -webkit-tap-highlight-color: transparent; }
 .s6-tools {
   position: absolute;
   right: 20px; top: 89px;
-  display: flex; flex-direction: column; gap: 16px;
+  display: flex; flex-direction: column; gap: 4px;
   z-index: 6;
   opacity: 0; transform: translateX(22px);
   transition: opacity 0.32s ease, transform 0.38s cubic-bezier(0.22,1,0.36,1);
   pointer-events: none;
   touch-action: manipulation;
+  border-radius: 999px;
+  padding: 6px;
 }
 .s6-tools.visible { opacity: 1; transform: translateX(0); pointer-events: auto; }
 .s6-tools.out     { opacity: 0; transform: translateX(32px); pointer-events: none; }
 
 .s6-tool-btn {
   position: relative;
-  width: 42px; height: 42px; padding: 9px;
-  background: rgba(0,0,0,0.28); border: none; border-radius: 50%;
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  width: 42px; height: 42px; padding: 7px;
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease, opacity 0.1s ease, transform 0.1s ease;
+  overflow: hidden;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.1s ease, transform 0.1s ease;
 }
-.s6-tool-btn:active { opacity: 0.6; transform: scale(0.88); }
-.s6-tool-btn.active { background: rgba(255,255,255,0.92); }
-.s6-tool-btn.active svg { stroke: #1A1A2E; }
-
+.s6-tool-btn:active {
+  opacity: 0.86;
+  transform: scale(0.9);
+}
 /* Floating left labels */
 .tool-label {
   position: absolute;
@@ -894,6 +878,7 @@ button { -webkit-tap-highlight-color: transparent; }
 #tmDoneBtn {
   position: absolute; right: 20px; top: 89px;
   width: 42px; height: 42px;
+  color: var(--glass-icon-color);
   background: var(--glass-bg);
   backdrop-filter: var(--glass-filter); -webkit-backdrop-filter: var(--glass-filter);
   border: var(--glass-border);
@@ -943,7 +928,7 @@ button { -webkit-tap-highlight-color: transparent; }
 
 /* ── Tool-mode bottom bars ── */
 #tmPenBar {
-  position: absolute; left: 16px; right: 16px; top: 835px;
+  position: absolute; left: 16px; right: 16px; top: auto; bottom: var(--tool-pill-bottom-inset);
   background: var(--glass-bg);
   backdrop-filter: var(--glass-filter); -webkit-backdrop-filter: var(--glass-filter);
   border: var(--glass-border);
@@ -959,6 +944,18 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .tm-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.15); flex-shrink: 0; margin: 0 14px; }
 .tm-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-right: 8px; }
+.opacity-slider-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.62);
+  opacity: 0.9;
+  margin-right: 8px;
+}
+.opacity-slider-icon svg { display: block; }
 .tm-val { font-family: 'Bedstead', monospace; font-size: 13px; color: rgba(255,255,255,0.45); width: 34px; text-align: right; flex-shrink: 0; margin-left: 8px; }
 
 /* ── Range sliders ── */
@@ -1182,19 +1179,23 @@ input[type="range"]::-moz-range-thumb {
   color: #1A1A2E; text-align: center;
   line-height: 1.5; margin-bottom: 24px;
 }
-.confirm-buttons { display: flex; gap: 10px; }
-.confirm-btn {
-  flex: 1; height: 52px;
-  border: none; border-radius: 18px;
-  font-family: 'Bedstead', monospace;
-  font-size: 16px;
-  cursor: pointer;
-  transition: opacity 0.12s ease, transform 0.12s ease;
+.confirm-actions .glass-action-pill {
+  background: rgba(26,26,46,0.1);
+  border-color: rgba(26,26,46,0.08);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
 }
-.confirm-btn:active { opacity: 0.78; transform: scale(0.96); }
-.confirm-btn-cancel { background: rgba(26,26,46,0.08); color: #1A1A2E; }
-.confirm-btn-ok     { background: #1A1A2E; color: white; }
-.confirm-btn-ok.danger { background: #FF3B30; }
+.confirm-actions .glass-action-btn {
+  color: #1A1A2E;
+}
+.confirm-actions .glass-action-btn-secondary {
+  background: rgba(255,255,255,0.56);
+  border-color: rgba(26,26,46,0.08);
+}
+.confirm-actions .glass-action-btn-danger {
+  background: rgba(255,59,48,0.88);
+  color: white;
+}
 
 /* ── Follow button (in contributors sheet) ── */
 .follow-btn {
@@ -1381,29 +1382,39 @@ input[type="range"]::-moz-range-thumb {
 
 .sp-header {
   display: flex; align-items: center; justify-content: center;
-  padding: 20px 16px 0; position: relative; flex-shrink: 0;
+  height: 72px;
+  padding: var(--canvas-chrome-inset) var(--canvas-chrome-inset) 0;
+  position: relative; flex-shrink: 0;
 }
-.sp-title { font-family: 'Bedstead', monospace; font-size: 18px; color: white; letter-spacing: 0.02em; }
+.sp-title { font-family: 'Bedstead', monospace; font-size: 17px; color: white; letter-spacing: 0.02em; }
 .sp-close {
-  position: absolute; right: 14px;
-  width: 34px; height: 34px;
-  background: rgba(255,255,255,0.1); border: none; border-radius: 11px;
+  position: absolute;
+  top: var(--canvas-chrome-inset);
+  right: var(--canvas-chrome-inset);
+  width: 42px; height: 42px;
+  padding: 7px;
+  background: var(--glass-control-bg); border: none; border-radius: 50%;
+  box-shadow: var(--glass-control-shadow);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: opacity 0.1s, transform 0.1s;
+  cursor: pointer; transition: background 0.15s, transform 0.1s;
 }
-.sp-close:active { opacity: 0.6; transform: scale(0.88); }
+.sp-close:active { transform: scale(0.9); }
 
 .sp-tabs {
-  display: flex; gap: 6px; justify-content: center;
-  padding: 14px 0 10px; flex-shrink: 0;
+  display: flex; gap: 10px; justify-content: center;
+  padding: 2px 0 8px; flex-shrink: 0;
 }
 .sp-tab {
-  width: 40px; height: 40px;
-  background: transparent; border: none; border-radius: 12px;
+  width: 42px; height: 42px;
+  padding: 7px;
+  background: transparent; border: none; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: background 0.15s;
+  cursor: pointer; transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
 }
-.sp-tab.active { background: rgba(255,255,255,0.15); }
+.sp-tab:active { transform: scale(0.9); }
+.sp-tab.active { background: var(--glass-control-bg); box-shadow: var(--glass-control-shadow); }
 .sp-tab svg { stroke: rgba(255,255,255,0.5); }
 .sp-tab.active svg { stroke: white; }
 
@@ -1413,24 +1424,73 @@ input[type="range"]::-moz-range-thumb {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 14px; padding: 24px 36px;
+  padding: 24px var(--canvas-chrome-inset);
+}
+.sp-empty-stack {
+  width: min(100%, 360px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .sp-empty-blob {
-  width: 148px; height: 148px;
-  background: rgba(255,255,255,0.08); border-radius: 50%;
+  width: 124px; height: 124px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.035));
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
   display: flex; align-items: center; justify-content: center;
-  font-size: 72px; margin-bottom: 6px;
+  margin-bottom: 22px;
+  flex-shrink: 0;
 }
-.sp-empty-title { font-family: 'Bedstead', monospace; font-size: 20px; color: white; text-align: center; line-height: 1.25; }
-.sp-empty-sub { font-family: 'Bedstead', monospace; font-size: 13px; color: rgba(255,255,255,0.5); text-align: center; line-height: 1.55; }
+.sp-empty-blob::before {
+  content: '';
+  width: 78px;
+  height: 54px;
+  background-image: url('../../camera-icon.png');
+  background-repeat: no-repeat;
+  background-size: 176px auto;
+  background-position: -28px -23px;
+}
+.sp-empty-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+.sp-empty-title {
+  font-family: 'Bedstead', monospace;
+  font-size: 18px;
+  color: rgba(255,255,255,0.96);
+  text-align: center;
+  line-height: 1.18;
+  text-shadow: 0 1px 12px rgba(0,0,0,0.18);
+}
+.sp-empty-sub {
+  font-family: 'Bedstead', monospace;
+  font-size: 12px;
+  color: rgba(255,255,255,0.58);
+  text-align: center;
+  line-height: 1.55;
+}
 .sp-get-started {
-  width: 100%; padding: 17px;
-  background: #6A00FF; color: white;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 24px;
+  background: var(--system-yellow);
+  color: #1A1A2E;
   font-family: 'Bedstead', monospace; font-size: 16px; letter-spacing: 0.04em;
-  border: none; border-radius: 18px; cursor: pointer; margin-top: 6px;
-  transition: opacity 0.1s, transform 0.1s;
+  border: none;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.34);
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.12s ease, transform 0.1s ease;
 }
-.sp-get-started:active { opacity: 0.8; transform: scale(0.98); }
+.sp-get-started:active { background: var(--system-yellow-active); transform: scale(0.98); }
 
 .sp-grid {
   position: absolute; inset: 0;

@@ -13,13 +13,15 @@ export function useTextTool({
   setExitBtnOut, setUndoRedoOut, setToolsOut, setBottomBarOut,
   toolsHideTimerRef, setToolsVisible,
   setTmIn,
-  toolsCollapseTimerRef, setToolsCollapsed, toolsCollapsedRef,
+  setToolsCollapsed, toolsCollapsedRef, toolsCollapseTimerRef,
   placeText,
 }) {
   const [textToolActive, setTextToolActive] = useState(false);
   const [txtFont, setTxtFont] = useState('mono');
   const [txtColor, setTxtColor] = useState('#FFFFFF');
   const [txtSize, setTxtSize] = useState(44);
+  const [txtWrapWidth, setTxtWrapWidth] = useState(280);
+  const [txtOpacity, setTxtOpacity] = useState(100);
   const [txtAlign, setTxtAlign] = useState('center');
   const textPreviewRef = useRef(null);
 
@@ -64,30 +66,28 @@ export function useTextTool({
     setToolsOut(false);
     setToolsCollapsed(false);
     toolsCollapsedRef.current = false;
-    setToolsVisible(true);
     clearTimeout(toolsCollapseTimerRef.current);
-    toolsCollapseTimerRef.current = setTimeout(() => {
-      setToolsCollapsed(true);
-      toolsCollapsedRef.current = true;
-    }, 2000);
+    setToolsVisible(true);
     setTimeout(() => {
       setExitBtnOut(false);
       setUndoRedoOut(false);
       setBottomBarOut(false);
     }, 100);
 
-    if (commit && txt) placeText(txt, txtFont, txtSize, txtColor, txtAlign);
+    if (commit && txt) placeText(txt, txtFont, txtSize, txtColor, txtAlign, txtWrapWidth, txtOpacity / 100);
     if (preview) preview.textContent = '';
   }, [activeToolRef, setActiveTool, setTextToolActive, setTmIn,
       setExitBtnOut, setUndoRedoOut, setToolsOut, setBottomBarOut,
       toolsHideTimerRef, setToolsVisible, setToolsCollapsed, toolsCollapsedRef,
-      toolsCollapseTimerRef, placeText, txtFont, txtSize, txtColor, txtAlign]);
+      toolsCollapseTimerRef, placeText, txtFont, txtSize, txtColor, txtAlign, txtWrapWidth, txtOpacity]);
 
   return {
     textToolActive,
     txtFont, setTxtFont,
     txtColor, setTxtColor,
     txtSize, setTxtSize,
+    txtWrapWidth, setTxtWrapWidth,
+    txtOpacity, setTxtOpacity,
     txtAlign, setTxtAlign,
     textPreviewRef,
     enterTextTool, exitTextTool,

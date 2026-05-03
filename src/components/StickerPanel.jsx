@@ -1,10 +1,16 @@
-import React, { useCallback } from 'react';
+import React from 'react';
+import GlassIconButton from './GlassIconButton.jsx';
+import GlassActionPill from './GlassActionPill.jsx';
+import StickerEmptyState from './StickerEmptyState.jsx';
+import SelectionModeButtons from './SelectionModeButtons.jsx';
+import StickerRefineControls from './StickerRefineControls.jsx';
+import OpacitySlider from './OpacitySlider.jsx';
 
 const SP_TABS = [
   {
     tab: 'recents', label: 'Recents',
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="9" />
         <polyline points="12 7 12 12 15 15" />
       </svg>
@@ -13,7 +19,7 @@ const SP_TABS = [
   {
     tab: 'mystickers', label: 'My Stickers',
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.85 0 3-.5 3-.5v-3.5s-1 .5-3 .5c-3.58 0-6.5-2.92-6.5-6.5S8.42 5.5 12 5.5c2.38 0 4.47 1.28 5.62 3.19" />
         <path d="M19 3v6h-6" />
       </svg>
@@ -22,7 +28,7 @@ const SP_TABS = [
   {
     tab: 'emoji', label: 'Emoji',
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
         <path d="M8 14s1.5 2 4 2 4-2 4-2" />
         <line x1="9" y1="9" x2="9.01" y2="9" />
@@ -33,7 +39,7 @@ const SP_TABS = [
 ];
 
 const CloseIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+  <svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round">
     <line x1="4" y1="4" x2="18" y2="18" />
     <line x1="18" y1="4" x2="4" y2="18" />
   </svg>
@@ -65,7 +71,12 @@ export default function StickerPanel({ sys }) {
     nsHeaderRef,
     nsOpacitySliderRef,
     nsOpacityValRef,
-    nsRefModeRef,
+    nsLassoCanConfirm,
+    nsPhase,
+    nsSelectionMode,
+    nsDetecting,
+    nsRefMode,
+    nsOpacity,
     stickerPhotoInputRef,
     stickerOverlayRef,
     stkTrashBinRef,
@@ -76,26 +87,20 @@ export default function StickerPanel({ sys }) {
     nsConfirmLasso,
     nsBackToLasso,
     nsApply,
+    nsSetSelectionMode,
+    nsSetRefMode,
+    nsHandleOpacityInput,
   } = sys;
 
-  const handleNsOpacity = useCallback((e) => {
-    const val = +e.target.value;
-    if (sys.nsOpacityRef) sys.nsOpacityRef.current = val;
-    if (nsOpacityValRef?.current) nsOpacityValRef.current.textContent = val + '%';
-    if (nsMaskCanvasRef?.current) nsMaskCanvasRef.current.style.opacity = String(val / 100);
-  }, [sys.nsOpacityRef, nsOpacityValRef, nsMaskCanvasRef]);
+  const selectionHint = {
+    freehand: 'Draw the sticker edge by hand',
+    circle: 'Drag a circle around your sticker',
+    rect: 'Drag a box around your sticker',
+    magic: 'Draw around your subject for smart cutout',
+  }[nsSelectionMode] || 'Draw a boundary around your subject';
 
-  const handleMarkClick = useCallback(() => {
-    if (sys.nsRefModeRef) sys.nsRefModeRef.current = 'pen';
-    document.getElementById('btnNsMark')?.classList.add('on');
-    document.getElementById('btnNsClear')?.classList.remove('on');
-  }, [sys.nsRefModeRef]);
-
-  const handleClearClick = useCallback(() => {
-    if (sys.nsRefModeRef) sys.nsRefModeRef.current = 'erase';
-    document.getElementById('btnNsClear')?.classList.add('on');
-    document.getElementById('btnNsMark')?.classList.remove('on');
-  }, [sys.nsRefModeRef]);
+  const confirmLabel = nsSelectionMode === 'magic' && nsDetecting ? 'Detecting...' : 'Confirm';
+  const showMagicAction = nsSelectionMode === 'magic' && nsPhase !== 'refine';
 
   return (
     <>
@@ -124,15 +129,9 @@ export default function StickerPanel({ sys }) {
         <div className="sp-content">
           {/* Empty */}
           <div
-            className="sp-empty"
             style={{ display: stickerTab !== 'emoji' && stickerLibrary.length === 0 ? 'flex' : 'none' }}
           >
-            <div className="sp-empty-blob">✦</div>
-            <p className="sp-empty-title">Turn any photo into a sticker.</p>
-            <p className="sp-empty-sub">Or paste one you copied.</p>
-            <button onClick={() => stickerPhotoInputRef.current?.click()}>
-              Get Started
-            </button>
+            <StickerEmptyState onGetStarted={() => stickerPhotoInputRef.current?.click()} />
           </div>
 
           {/* Grid */}
@@ -163,27 +162,116 @@ export default function StickerPanel({ sys }) {
       </div>
 
       {/* New Sticker Screen */}
-      <div className={`new-sticker-screen${newStickerVisible ? ' ns-visible' : ''}`}>
-        <div className="ns-header" ref={nsHeaderRef}>
-          <button onClick={() => closeNewStickerScreen(true)}>
-            <CloseIcon />
-          </button>
-          <p>New Sticker</p>
+      <div className={`new-sticker-screen${newStickerVisible ? ' ns-visible' : ''}`} id="newStickerScreen">
+        <div className="ns-header" id="nsHeader" ref={nsHeaderRef}>
+          <GlassIconButton
+            className="ns-close-btn"
+            id="btnNsClose"
+            icon="close"
+            label="Close"
+            contained={false}
+            onClick={() => closeNewStickerScreen(true)}
+          />
+          <p className="ns-title">New Sticker</p>
         </div>
 
-        <div className="ns-preview-wrap">
-          <div ref={nsLoadingRef}>Detecting…</div>
-          <canvas ref={nsImageCanvasRef} />
-          <canvas ref={nsMaskCanvasRef} />
-          <canvas ref={nsLassoCanvasRef} />
+        <div className="ns-preview-wrap" id="nsPreviewWrap">
+          <div className="ns-loading" id="nsLoading" ref={nsLoadingRef}>
+            <div className="ns-spinner" />
+            <span className="ns-loading-txt">Detecting…</span>
+          </div>
+          <canvas id="nsImageCanvas" ref={nsImageCanvasRef} />
+          <canvas id="nsMaskCanvas" ref={nsMaskCanvasRef} />
+          <canvas id="nsLassoCanvas" ref={nsLassoCanvasRef} />
         </div>
 
-        <div ref={nsBarLassoRef}>
-          <button onClick={nsConfirmLasso}>Confirm</button>
+        <button
+          type="button"
+          id="btnNsRefineBack"
+          ref={nsBtnRefineBackRef}
+          aria-label="Back to selection"
+          onClick={nsBackToLasso}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7" />
+          </svg>
+          Back
+        </button>
+
+        <div id="nsBrushPanel" className="glass-floaty-surface" ref={nsBrushPanelRef}>
+          <div id="nsTrackTop" ref={nsTrackTopRef} />
+          <div id="nsTrackBottom" ref={nsTrackBottomRef} />
+          <div id="nsBrushHandle" ref={nsBrushHandleRef} />
         </div>
 
-        <div ref={nsBarRefineRef}>
-          <button onClick={nsApply}>Add Sticker</button>
+        <div id="nsBarArea">
+          <div className="ns-bar ns-bar-col" id="nsBarLasso" ref={nsBarLassoRef} style={{ display: 'none' }}>
+            {showMagicAction ? (
+              <GlassActionPill
+                className="ns-lasso-action"
+                pillClassName="glass-floaty-surface glass-tool-pill"
+                hint={selectionHint}
+                ariaLabel="New sticker selection actions"
+                actions={[
+                  {
+                    id: 'btnNsLassoBack',
+                    label: (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M15 18l-6-6 6-6" />
+                      </svg>
+                    ),
+                    variant: 'secondary',
+                    shape: 'circle',
+                    'aria-label': 'Back',
+                    onClick: () => nsSetSelectionMode('freehand'),
+                  },
+                  {
+                    id: 'btnNsConfirm',
+                    label: confirmLabel,
+                    variant: 'primary',
+                    buttonRef: nsBtnConfirmRef,
+                    disabled: !nsLassoCanConfirm || nsPhase === 'detecting',
+                    onClick: nsConfirmLasso,
+                  },
+                ]}
+              />
+            ) : (
+              <>
+                <span className="sticker-maker-hint">{selectionHint}</span>
+                <div className="sticker-maker-pill glass-floaty-surface glass-tool-pill">
+                  <SelectionModeButtons
+                    mode={nsSelectionMode}
+                    onModeClick={nsSetSelectionMode}
+                  />
+                  <div className="tm-divider" />
+                  <OpacitySlider
+                    inline
+                    inputId="nsMakerOpacitySlider"
+                    valueClassName="tm-val"
+                    valueLabel={`${nsOpacity}%`}
+                    min="10"
+                    max="100"
+                    value={nsOpacity}
+                    style={{ '--fill': `${nsOpacity}%` }}
+                    onInput={nsHandleOpacityInput}
+                    onChange={nsHandleOpacityInput}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="ns-bar ns-bar-col glass-floaty-surface" id="nsBarRefine" ref={nsBarRefineRef} style={{ display: 'none' }}>
+            <StickerRefineControls
+              refMode={nsRefMode}
+              opacity={nsOpacity}
+              opacitySliderRef={nsOpacitySliderRef}
+              opacityValueRef={nsOpacityValRef}
+              onRefMode={nsSetRefMode}
+              onOpacityInput={nsHandleOpacityInput}
+              onApply={nsApply}
+            />
+          </div>
         </div>
       </div>
 
@@ -195,6 +283,8 @@ export default function StickerPanel({ sys }) {
       {/* File input */}
       <input
         type="file"
+        id="stickerPhotoInput"
+        accept="image/*"
         ref={stickerPhotoInputRef}
         onChange={handleStickerPhotoChange}
         style={{ display: 'none' }}
