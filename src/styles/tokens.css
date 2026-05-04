@@ -1,0 +1,100 @@
+:root {
+  /* Color */
+  --color-brand-yellow: #F0E84A;
+  --color-brand-yellow-active: #EEFF01;
+  --color-brand-mint: #C6F0D6;
+  --color-ink: #1A1A2E;
+  --color-ink-rgb: 26, 26, 46;
+  --color-canvas: #F7F5F2;
+  --color-page: #E8E4DF;
+  --color-surface: #FFFFFF;
+  --color-danger: #FF3B30;
+  --color-white: #FFFFFF;
+
+  /* Legacy aliases used while older CSS is migrated. */
+  --system-yellow: var(--color-brand-yellow);
+  --system-yellow-active: var(--color-brand-yellow-active);
+
+  /* Semantic surfaces */
+  --surface-brand-bg: var(--color-brand-yellow);
+  --surface-brand-bg-active: var(--color-brand-yellow-active);
+  --surface-brand-fg: var(--color-ink);
+  --surface-brand-muted: rgba(var(--color-ink-rgb), 0.6);
+  --surface-brand-muted-strong: rgba(var(--color-ink-rgb), 0.42);
+  --surface-brand-control: rgba(var(--color-ink-rgb), 0.1);
+  --surface-brand-control-subtle: rgba(var(--color-ink-rgb), 0.08);
+
+  /* Typography */
+  --font-display: 'Bedstead', monospace;
+  --font-system: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --text-xs: 12px;
+  --text-sm: 15px;
+  --text-md: 17px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-title: 30px;
+  --text-hero: 42px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 10px;
+  --space-5: 12px;
+  --space-6: 14px;
+  --space-7: 16px;
+  --space-8: 18px;
+  --space-9: 20px;
+  --space-10: 24px;
+  --space-11: 28px;
+  --space-12: 36px;
+  --space-13: 44px;
+
+  /* Radii */
+  --radius-control: 10px;
+  --radius-icon: 50%;
+  --radius-button: 18px;
+  --radius-card: 28px;
+  --radius-sheet: 28px 28px 0 0;
+  --radius-pill: 999px;
+  --radius-phone: 52px;
+  --radius-canvas: 20px;
+
+  /* Glass */
+  --glass-bg: rgba(192, 192, 192, 0.18);
+  --glass-filter: blur(40px) saturate(160%);
+  --glass-border-color: rgba(255, 255, 255, 0.35);
+  --glass-border: 1px solid var(--glass-border-color);
+  --glass-shadow: none;
+  --glass-control-bg: rgba(255, 255, 255, 0.095);
+  --glass-control-border: rgba(255, 255, 255, 0.13);
+  --glass-control-active: rgba(255, 255, 255, 0.18);
+  --glass-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --glass-icon-color: rgba(255, 255, 255, 0.96);
+
+  /* Shadows */
+  --shadow-brand-card: 0 24px 64px rgba(0, 0, 0, 0.32), 0 4px 16px rgba(0, 0, 0, 0.14);
+  --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.16);
+  --shadow-phone: 0 32px 80px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.06);
+
+  /* Motion */
+  --motion-fast: 0.1s ease;
+  --motion-medium: 0.25s ease;
+  --motion-panel: 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-spring: 0.36s cubic-bezier(0.34, 1.2, 0.64, 1);
+  --motion-enter: 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Layout and controls */
+  --z-scrim: 10;
+  --z-overlay: 11;
+  --z-modal-scrim: 12;
+  --z-modal: 13;
+  --z-toolbar: 6;
+  --control-icon-size: 42px;
+  --control-icon-padding: 7px;
+  --icon-size: 28px;
+  --icon-size-sm: 24px;
+  --icon-stroke-width: 1.5;
+  --canvas-chrome-inset: 18px;
+  --tool-pill-bottom-inset: 20px;
+}

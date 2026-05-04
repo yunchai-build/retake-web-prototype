@@ -1,0 +1,56 @@
+.scrim,
+.confirm-scrim {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scrim {
+  background: rgba(0, 0, 0, 0.4);
+  transition: opacity 0.3s ease;
+  z-index: var(--z-scrim);
+}
+
+.confirm-scrim {
+  background: rgba(0, 0, 0, 0.42);
+  transition: opacity var(--motion-medium);
+  z-index: var(--z-modal-scrim);
+}
+
+.scrim.visible,
+.confirm-scrim.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.confirm-dialog {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, calc(-50% + 24px));
+  width: 320px;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-modal);
+  padding: 28px 24px 22px;
+  z-index: var(--z-modal);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s ease, transform var(--motion-spring);
+}
+
+.confirm-dialog.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+}
+
+.confirm-message {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  color: var(--color-ink);
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: var(--space-10);
+}

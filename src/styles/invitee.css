@@ -1,24 +1,13 @@
-@font-face {
-  font-family: 'Bedstead';
-  src: url('/bedstead-extracondensed.otf') format('opentype');
-  font-weight: normal; font-style: normal;
-}
 /* ─────────────────────────────────────────────────────
    BASE
 ───────────────────────────────────────────────────── */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
 body {
-  background: #E8E4DF;
+  background: var(--color-page);
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
 }
-
-/* remove tap flash on mobile */
-button { -webkit-tap-highlight-color: transparent; }
-
 
 /* ─────────────────────────────────────────────────────
    ROOT PHONE FRAME
@@ -27,10 +16,10 @@ button { -webkit-tap-highlight-color: transparent; }
   width: 430px;
   height: 932px;
   position: relative;
-  background: #F7F5F2;
+  background: var(--color-canvas);
   overflow: hidden;
   border-radius: 52px;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-phone);
 }
 
 
@@ -129,14 +118,14 @@ button { -webkit-tap-highlight-color: transparent; }
   opacity: 0;
   pointer-events: none;
   z-index: 11;
-  background: #F0E84A;
-  border-radius: 28px;
+  background: var(--surface-brand-bg);
+  border-radius: var(--radius-card);
   padding: 28px 28px 28px;
   width: 360px;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.32), 0 4px 16px rgba(0,0,0,0.14);
+  box-shadow: var(--shadow-brand-card);
   transition: opacity 0.38s ease, transform 0.42s cubic-bezier(0.22,1,0.36,1);
 }
 .invite-card.visible {
@@ -149,26 +138,26 @@ button { -webkit-tap-highlight-color: transparent; }
 .app-icon {
   width: 44px; height: 44px;
   border-radius: 14px;
-  background: #1A1A2E;
+  background: var(--color-ink);
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Bedstead', monospace;
-  font-size: 16px; color: #F0E84A;
+  font-family: var(--font-display);
+  font-size: 16px; color: var(--color-brand-yellow);
 }
 
 /* ── Card text + buttons ── */
 .card-content { display: flex; flex-direction: column; gap: 20px; }
 .card-text    { display: flex; flex-direction: column; gap: 0; }
 .card-username {
-  color: #1A1A2E;
-  font-family: 'Bedstead', monospace;
-  font-size: 42px;
+  color: var(--surface-brand-fg);
+  font-family: var(--font-display);
+  font-size: var(--text-hero);
   line-height: 1.0;
 }
 .card-subtitle {
-  color: rgba(26,26,46,0.6);
-  font-family: 'Bedstead', monospace;
-  font-size: 42px;
+  color: var(--surface-brand-muted);
+  font-family: var(--font-display);
+  font-size: var(--text-hero);
   line-height: 1.0;
 }
 .card-buttons { display: flex; gap: 10px; }
@@ -177,9 +166,9 @@ button { -webkit-tap-highlight-color: transparent; }
 .btn {
   flex: 1;
   padding: 16px 0;
-  border-radius: 18px;
-  font-family: 'Bedstead', monospace;
-  font-size: 18px;
+  border-radius: var(--radius-button);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
   line-height: normal;
   cursor: pointer;
   border: none;
@@ -187,8 +176,8 @@ button { -webkit-tap-highlight-color: transparent; }
   transition: opacity 0.1s ease, transform 0.1s ease;
 }
 .btn:active { opacity: 0.78; transform: scale(0.97); }
-.btn-decline { background: rgba(26,26,46,0.10); color: #1A1A2E; }
-.btn-accept  { background: #1A1A2E; color: #F0E84A; }
+.btn-decline { background: var(--surface-brand-control); color: var(--color-ink); }
+.btn-accept  { background: var(--color-ink); color: var(--color-brand-yellow); }
 
 
 /* ═════════════════════════════════════════════════════
@@ -212,8 +201,8 @@ button { -webkit-tap-highlight-color: transparent; }
   position: absolute;
   left: 0; bottom: 0;
   width: 430px;
-  background: #FFFFFF;
-  border-radius: 28px 28px 0 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-sheet);
   box-shadow: 0 -2px 40px rgba(0,0,0,0.10);
   overflow: hidden;
   transform: translateY(100%);
@@ -520,13 +509,13 @@ button { -webkit-tap-highlight-color: transparent; }
 .cam-btn:active { opacity: 0.6; transform: scale(0.88); }
 
 /* ── Timer active state ── */
-#btnTimer.timer-active svg { stroke: #EEFF01; }
+#btnTimer.timer-active svg { stroke: var(--color-brand-yellow-active); }
 .timer-badge {
   position: absolute;
   top: 1px; right: 1px;
-  background: #EEFF01;
-  color: #1A1A2E;
-  font-family: 'Bedstead', monospace;
+  background: var(--color-brand-yellow-active);
+  color: var(--color-ink);
+  font-family: var(--font-display);
   font-size: 9px; font-weight: 700;
   line-height: 1;
   padding: 2px 4px;
@@ -696,13 +685,8 @@ button { -webkit-tap-highlight-color: transparent; }
 
 .cam-gallery-btn {
   width: 46px; height: 46px;
-  border: none;
   border-radius: 14px;
-  background: rgba(255,255,255,0.12);
-  cursor: pointer; flex-shrink: 0;
-  transition: background 0.1s ease, transform 0.1s ease;
 }
-.cam-gallery-btn:active { background: rgba(255,255,255,0.22); transform: scale(0.9); }
 
 /* ── Scrolling frame title ── */
 .cam-marquee-wrap {
@@ -890,7 +874,7 @@ button { -webkit-tap-highlight-color: transparent; }
   transition: opacity 0.28s ease, transform 0.34s cubic-bezier(0.22,1,0.36,1), background 0.1s ease;
 }
 #tmDoneBtn.tm-in { transform: translateY(0); }
-#tmDoneBtn:active { background: #EEFF01; transform: scale(0.95) translateY(0); }
+#tmDoneBtn:active { background: var(--color-brand-yellow-active); transform: scale(0.95) translateY(0); }
 
 /* ── Left size-track panel ── */
 #tmLeftPanel {
@@ -1075,7 +1059,7 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer; flex-shrink: 0;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
-.s6-send-btn:active { background: #EEFF01; transform: scale(0.91); box-shadow: 0 1px 6px rgba(0,0,0,0.2); }
+.s6-send-btn:active { background: var(--color-brand-yellow-active); transform: scale(0.91); box-shadow: 0 1px 6px rgba(0,0,0,0.2); }
 
 /* ── S6 toast ── */
 .s6-toast {
@@ -1105,8 +1089,8 @@ input[type="range"]::-moz-range-thumb {
   left: 20px; right: 20px;
   bottom: -20px;
   transform: translateY(100%);
-  background: #C6F0D6;
-  border-radius: 28px 28px 0 0;
+  background: var(--color-brand-mint);
+  border-radius: var(--radius-sheet);
   padding: 28px 28px 44px;
   display: flex; flex-direction: column; gap: 12px;
   z-index: 11; opacity: 0; pointer-events: none;
@@ -1114,33 +1098,33 @@ input[type="range"]::-moz-range-thumb {
 }
 .s7-pop.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 .s7-pop-title {
-  font-family: 'Bedstead', monospace;
-  font-size: 30px;
-  color: #1A1A2E;
+  font-family: var(--font-display);
+  font-size: var(--text-title);
+  color: var(--color-ink);
   line-height: 1;
 }
 .s7-pop-subtitle {
-  font-family: 'Bedstead', monospace;
-  font-size: 15px;
-  color: rgba(26,26,46,0.6);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  color: var(--surface-brand-muted);
 }
 .s7-pop-code-row {
   display: flex; align-items: center; gap: 8px;
   margin-top: 8px;
-  background: rgba(26,26,46,0.08);
+  background: var(--surface-brand-control-subtle);
   border-radius: 16px;
   padding: 14px 16px;
 }
 .s7-pop-code {
   flex: 1;
-  font-family: 'Bedstead', monospace;
-  font-size: 22px;
-  color: #1A1A2E;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--color-ink);
   letter-spacing: 0.12em;
 }
 .s7-pop-copy-btn {
   width: 36px; height: 36px;
-  background: #1A1A2E; border: none; border-radius: 10px; cursor: pointer;
+  background: var(--color-ink); border: none; border-radius: var(--radius-control); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   padding: 0; flex-shrink: 0;
   transition: opacity 0.1s ease, transform 0.1s ease;
@@ -1152,7 +1136,7 @@ input[type="range"]::-moz-range-thumb {
 .confirm-scrim {
   position: absolute; inset: 0;
   background: rgba(0,0,0,0.42);
-  z-index: 11; opacity: 0; pointer-events: none;
+  z-index: var(--z-modal-scrim); opacity: 0; pointer-events: none;
   transition: opacity 0.25s ease;
 }
 .confirm-scrim.visible { opacity: 1; pointer-events: auto; }
@@ -1162,11 +1146,11 @@ input[type="range"]::-moz-range-thumb {
   left: 50%; top: 50%;
   transform: translate(-50%, calc(-50% + 24px));
   width: 320px;
-  background: #FFFFFF;
-  border-radius: 28px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.16);
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-modal);
   padding: 28px 24px 22px;
-  z-index: 12; opacity: 0; pointer-events: none;
+  z-index: var(--z-modal); opacity: 0; pointer-events: none;
   transition: opacity 0.24s ease, transform 0.36s cubic-bezier(0.34,1.2,0.64,1);
 }
 .confirm-dialog.visible {
@@ -1174,27 +1158,25 @@ input[type="range"]::-moz-range-thumb {
   transform: translate(-50%, -50%);
 }
 .confirm-message {
-  font-family: 'Bedstead', monospace;
-  font-size: 17px;
-  color: #1A1A2E; text-align: center;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  color: var(--color-ink); text-align: center;
   line-height: 1.5; margin-bottom: 24px;
 }
-.confirm-actions .glass-action-pill {
-  background: rgba(26,26,46,0.1);
-  border-color: rgba(26,26,46,0.08);
-  backdrop-filter: blur(18px) saturate(130%);
-  -webkit-backdrop-filter: blur(18px) saturate(130%);
-}
-.confirm-actions .glass-action-btn {
-  color: #1A1A2E;
-}
-.confirm-actions .glass-action-btn-secondary {
+.confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: rgba(255,255,255,0.56);
-  border-color: rgba(26,26,46,0.08);
+  border-radius: var(--radius-pill);
+  padding: 8px;
 }
-.confirm-actions .glass-action-btn-danger {
-  background: rgba(255,59,48,0.88);
-  color: white;
+.confirm-action-btn {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  padding: 0 16px;
+  color: var(--color-ink);
 }
 
 /* ── Follow button (in contributors sheet) ── */
@@ -1391,30 +1373,12 @@ input[type="range"]::-moz-range-thumb {
   position: absolute;
   top: var(--canvas-chrome-inset);
   right: var(--canvas-chrome-inset);
-  width: 42px; height: 42px;
-  padding: 7px;
-  background: var(--glass-control-bg); border: none; border-radius: 50%;
-  box-shadow: var(--glass-control-shadow);
-  backdrop-filter: blur(14px) saturate(150%);
-  -webkit-backdrop-filter: blur(14px) saturate(150%);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: background 0.15s, transform 0.1s;
 }
-.sp-close:active { transform: scale(0.9); }
 
 .sp-tabs {
   display: flex; gap: 10px; justify-content: center;
   padding: 2px 0 8px; flex-shrink: 0;
 }
-.sp-tab {
-  width: 42px; height: 42px;
-  padding: 7px;
-  background: transparent; border: none; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
-}
-.sp-tab:active { transform: scale(0.9); }
-.sp-tab.active { background: var(--glass-control-bg); box-shadow: var(--glass-control-shadow); }
 .sp-tab svg { stroke: rgba(255,255,255,0.5); }
 .sp-tab.active svg { stroke: white; }
 
@@ -1434,13 +1398,7 @@ input[type="range"]::-moz-range-thumb {
 }
 .sp-empty-blob {
   width: 124px; height: 124px;
-  background:
-    linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.035));
-  border: 1px solid rgba(255,255,255,0.09);
   border-radius: 50%;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
-  backdrop-filter: blur(16px) saturate(130%);
-  -webkit-backdrop-filter: blur(16px) saturate(130%);
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 22px;
   flex-shrink: 0;
@@ -1480,9 +1438,9 @@ input[type="range"]::-moz-range-thumb {
   width: 100%;
   min-height: 54px;
   padding: 0 24px;
-  background: var(--system-yellow);
-  color: #1A1A2E;
-  font-family: 'Bedstead', monospace; font-size: 16px; letter-spacing: 0.04em;
+  background: var(--color-brand-yellow);
+  color: var(--color-ink);
+  font-family: var(--font-display); font-size: 16px; letter-spacing: 0.04em;
   border: none;
   border-radius: 999px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.34);
@@ -1490,7 +1448,7 @@ input[type="range"]::-moz-range-thumb {
   margin-top: 8px;
   transition: background 0.12s ease, transform 0.1s ease;
 }
-.sp-get-started:active { background: var(--system-yellow-active); transform: scale(0.98); }
+.sp-get-started:active { background: var(--color-brand-yellow-active); transform: scale(0.98); }
 
 .sp-grid {
   position: absolute; inset: 0;
@@ -1592,6 +1550,53 @@ input[type="range"]::-moz-range-thumb {
   transition: opacity 0.1s, transform 0.1s;
 }
 .ns-btn:active { opacity: 0.7; transform: scale(0.91) translateY(3px); box-shadow: 0 2px 0 #1A1A2E; }
+
+#btnNsRefineBack {
+  position: absolute; top: 20px; left: 20px; z-index: 16;
+  display: none;
+}
+
+.ns-lasso-action {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.ns-lasso-hint {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  color: rgba(255,255,255,0.66);
+  text-align: center;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.22);
+}
+
+.ns-lasso-pill {
+  width: 100%;
+  height: 76px;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+}
+
+.ns-lasso-back-btn {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+}
+
+.ns-confirm-btn {
+  flex: 1;
+  height: 52px;
+  min-width: 0;
+  padding: 0 20px;
+}
 
 #stickerOverlay {
   position: absolute; left: 8px; top: 77px;

@@ -1,0 +1,166 @@
+.control-icon {
+  border: 0;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--glass-icon-color);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--motion-fast), box-shadow var(--motion-fast), opacity var(--motion-fast), transform 0.1s ease;
+}
+
+.control-icon:active {
+  transform: scale(0.9);
+}
+
+.control-icon:disabled {
+  cursor: default;
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.control-icon--circle {
+  width: var(--control-icon-size);
+  height: var(--control-icon-size);
+  padding: var(--control-icon-padding);
+  border-radius: 50%;
+}
+
+.control-icon--pill {
+  min-width: var(--control-icon-size);
+  min-height: var(--control-icon-size);
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+}
+
+.control-icon--square {
+  width: var(--control-icon-size);
+  height: var(--control-icon-size);
+  padding: var(--control-icon-padding);
+  border-radius: var(--radius-control);
+}
+
+.control-icon--plain {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.control-icon--glass {
+  background: var(--glass-control-bg);
+  border: 1px solid var(--glass-control-border);
+  box-shadow: var(--glass-control-shadow);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
+
+.control-icon--glass.active,
+.control-icon--glass:active {
+  background: var(--glass-control-active);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.control-icon--solid {
+  background: var(--glass-control-bg);
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
+
+.control-icon--solid.active,
+.control-icon--solid:active {
+  background: var(--glass-control-active);
+}
+
+.control-icon--brand {
+  background: var(--color-brand-yellow);
+  color: var(--color-ink);
+  border: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+.control-icon--brand:active {
+  background: var(--color-brand-yellow-active);
+}
+
+.solid-surface {
+  background: var(--glass-control-bg);
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
+
+.control-pill {
+  border: 0;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--motion-fast), opacity var(--motion-fast), transform 0.12s ease;
+}
+
+.control-pill:active {
+  transform: scale(0.97);
+}
+
+.control-pill:disabled {
+  cursor: default;
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+.control-pill--glass {
+  color: rgba(255, 255, 255, 0.94);
+  background: var(--glass-control-bg);
+  border: 1px solid var(--glass-control-border);
+  box-shadow: var(--glass-control-shadow);
+}
+
+.control-pill--solid {
+  color: var(--glass-icon-color);
+  background: var(--glass-control-bg);
+  border: 0;
+  box-shadow: none;
+}
+
+.control-pill--solid-yellow {
+  background: rgba(240, 232, 74, 0.72);
+  color: var(--color-ink);
+  border: 0;
+  box-shadow: none;
+}
+
+.control-pill--solid-yellow:not(:disabled):active {
+  background: rgba(238, 255, 1, 0.82);
+}
+
+.control-pill--solid-yellow:disabled {
+  background: rgba(240, 232, 74, 0.24);
+  color: rgba(26, 26, 46, 0.48);
+  opacity: 1;
+}
+
+.control-pill--brand {
+  background: var(--color-brand-yellow);
+  color: var(--color-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
+}
+
+.control-pill--danger {
+  background: rgba(255, 59, 48, 0.88);
+  color: white;
+  box-shadow: none;
+}
+
+.control-pill--danger:not(:disabled):active {
+  background: rgba(255, 59, 48, 0.96);
+}

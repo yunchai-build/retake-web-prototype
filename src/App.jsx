@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import InviterPage from './pages/InviterPage.jsx';
-import InviteePage from './pages/InviteePage.jsx';
+import InviterPage from './features/inviter/InviterPage.jsx';
+import InviteePage from './features/invitee/InviteePage.jsx';
 
 export default function App() {
   return (

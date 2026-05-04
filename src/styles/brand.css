@@ -1,0 +1,68 @@
+.brand-surface,
+.invite-card,
+.share-pop {
+  background: var(--surface-brand-bg);
+  color: var(--surface-brand-fg);
+}
+
+.brand-card,
+.invite-card {
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-brand-card);
+}
+
+.brand-sheet,
+.share-pop {
+  border-radius: var(--radius-sheet);
+}
+
+.app-icon {
+  background: var(--color-ink);
+  color: var(--color-brand-yellow);
+}
+
+.card-username,
+.s7-pop-title,
+.s7-pop-code {
+  color: var(--surface-brand-fg);
+}
+
+.card-subtitle,
+.s7-pop-subtitle {
+  color: var(--surface-brand-muted);
+}
+
+.s7-pop-dim {
+  color: var(--surface-brand-muted-strong);
+}
+
+.s7-pop-code-row {
+  background: var(--surface-brand-control-subtle);
+}
+
+.s7-pop-copy-btn,
+.btn-primary,
+.btn-accept {
+  background: var(--color-ink);
+  color: var(--color-brand-yellow);
+}
+
+.btn-secondary,
+.btn-decline {
+  background: var(--surface-brand-control);
+  color: var(--color-ink);
+}
+
+.brand-button {
+  border: 0;
+  border-radius: var(--radius-button);
+  font-family: var(--font-display);
+  cursor: pointer;
+  transition: opacity var(--motion-fast), transform var(--motion-fast);
+}
+
+.brand-button:active,
+.btn:active {
+  opacity: 0.78;
+  transform: scale(0.97);
+}
