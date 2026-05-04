@@ -588,17 +588,7 @@ body {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, calc(-50% + 12px));
-  width: fit-content; white-space: nowrap;
-  background: rgba(254,253,251,0.6);
-  border: 1.5px solid rgba(26,26,46,0.2);
-  border-radius: 18px;
-  padding: 12px 18px;
-  text-align: center;
-  z-index: 9; opacity: 0; pointer-events: none;
-  transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-  font-family: 'Bedstead', monospace;
-  font-size: 17px;
-  color: #1A1A2E;
+  z-index: 9;
 }
 .cam-popup.visible { opacity: 1; transform: translate(-50%, -50%); }
 
@@ -763,9 +753,13 @@ body {
   position: absolute;
   left: 20px; top: 89px;
   width: 42px; height: 42px;
-  background: rgba(0,0,0,0.28);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  border: none; border-radius: 50%;
+  padding: 7px;
+  color: var(--glass-icon-color);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-filter); -webkit-backdrop-filter: var(--glass-filter);
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; z-index: 6;
   opacity: 0; transform: translateY(-16px);
@@ -774,7 +768,7 @@ body {
 }
 .s6-exit-btn.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 .s6-exit-btn.out     { opacity: 0; transform: translateY(-16px); pointer-events: none; }
-.s6-exit-btn:active  { opacity: 0.6; transform: scale(0.88); }
+.s6-exit-btn.visible:active  { opacity: 0.6; transform: translateY(0) scale(0.88); }
 
 /* ── S6 Right editing tools panel ── */
 .s6-tools {
@@ -1066,20 +1060,7 @@ input[type="range"]::-moz-range-thumb {
   position: absolute;
   bottom: 108px; left: 50%;
   transform: translateX(-50%) translateY(8px);
-  width: fit-content; white-space: nowrap;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-filter);
-  -webkit-backdrop-filter: var(--glass-filter);
-  border: var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  border-radius: 999px;
-  padding: 12px 24px;
-  text-align: center;
-  z-index: 10; opacity: 0; pointer-events: none;
-  transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.22,1,0.36,1);
-  font-family: 'Bedstead', monospace;
-  font-size: 15px;
-  color: white;
+  z-index: 10;
 }
 .s6-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 

@@ -53,7 +53,7 @@ export default function VerticalToolbar({
             key={toolId}
             {...meta}
             active={meta.activeTool === activeTool}
-            hidden={collapsed && index >= 2}
+            hidden={collapsed && index >= 1}
             onClick={handlers[toolId]}
             onMouseEnter={onToolMouseEnter}
             onMouseLeave={onToolMouseLeave}

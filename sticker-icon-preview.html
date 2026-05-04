@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Sticker Icon Preview</title>
+  <style>
+    body { background: #f0f0f0; font-family: sans-serif; padding: 40px; }
+    .row { display: flex; align-items: flex-end; gap: 40px; flex-wrap: wrap; margin-bottom: 40px; }
+    .item { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .label { font-size: 13px; color: #555; }
+    svg { background: white; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+    .dark svg { background: #1a1a1a; }
+    h2 { margin: 0 0 16px; font-size: 14px; color: #333; text-transform: uppercase; letter-spacing: .05em; }
+  </style>
+</head>
+<body>
+
+<h2>Candidate — Peeling Sticker Smiley</h2>
+<p style="color:#444;font-size:13px;max-width:600px">
+  Circle arc covers ~295° of the face. Fold crease curves inward (concave toward center).
+  Outer peel flap curves beyond the circle boundary to the lower-right. Confirm this matches
+  the reference, then I'll wire it into ToolIcon.jsx.
+</p>
+
+<div class="row">
+  <div class="item">
+    <svg width="300" height="300" viewBox="0 0 24 24" fill="none"
+         stroke="black" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Main circle arc: counterclockwise from A(19.3,14.5) to B(14.5,19.3), large arc -->
+      <path d="M 19.3 14.5 A 7.75 7.75 0 1 0 14.5 19.3" stroke-width="1"/>
+      <!-- Fold crease: curves inward (concave toward center) -->
+      <path d="M 19.3 14.5 Q 15.5 15.5 14.5 19.3" stroke-width="1"/>
+      <!-- Outer peel flap: curves outward past the circle boundary -->
+      <path d="M 19.3 14.5 C 22 15.5 22.5 21 14.5 19.3" stroke-width="1"/>
+      <!-- Left eye -->
+      <circle cx="9.25" cy="9.6" r="0.85" fill="black" stroke="none"/>
+      <!-- Right eye -->
+      <circle cx="14.75" cy="9.6" r="0.85" fill="black" stroke="none"/>
+      <!-- Smile -->
+      <path d="M8.75 14.15 c.85 1.05 1.9 1.55 3.25 1.55 s2.4-.5 3.25-1.55" stroke-width="1"/>
+    </svg>
+    <span class="label">300×300 (light bg)</span>
+  </div>
+
+  <div class="item dark">
+    <svg width="300" height="300" viewBox="0 0 24 24" fill="none"
+         stroke="white" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M 19.3 14.5 A 7.75 7.75 0 1 0 14.5 19.3" stroke-width="1"/>
+      <path d="M 19.3 14.5 Q 15.5 15.5 14.5 19.3" stroke-width="1"/>
+      <path d="M 19.3 14.5 C 22 15.5 22.5 21 14.5 19.3" stroke-width="1"/>
+      <circle cx="9.25" cy="9.6" r="0.85" fill="white" stroke="none"/>
+      <circle cx="14.75" cy="9.6" r="0.85" fill="white" stroke="none"/>
+      <path d="M8.75 14.15 c.85 1.05 1.9 1.55 3.25 1.55 s2.4-.5 3.25-1.55" stroke-width="1"/>
+    </svg>
+    <span class="label">300×300 (dark bg — as it appears in toolbar)</span>
+  </div>
+
+  <!-- Toolbar-actual size -->
+  <div class="item">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+         stroke="black" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M 19.3 14.5 A 7.75 7.75 0 1 0 14.5 19.3"/>
+      <path d="M 19.3 14.5 Q 15.5 15.5 14.5 19.3"/>
+      <path d="M 19.3 14.5 C 22 15.5 22.5 21 14.5 19.3"/>
+      <circle cx="9.25" cy="9.6" r="0.85" fill="black" stroke="none"/>
+      <circle cx="14.75" cy="9.6" r="0.85" fill="black" stroke="none"/>
+      <path d="M8.75 14.15 c.85 1.05 1.9 1.55 3.25 1.55 s2.4-.5 3.25-1.55"/>
+    </svg>
+    <span class="label">24×24 (actual toolbar size)</span>
+  </div>
+</div>
+
+<hr style="margin:32px 0;border:none;border-top:1px solid #ddd"/>
+<h2>Reference image anatomy</h2>
+<ul style="color:#444;font-size:13px;line-height:1.9">
+  <li><strong>A</strong> (peel start) ≈ 3:30 o'clock on circle → (19.3, 14.5)</li>
+  <li><strong>B</strong> (peel end) ≈ 5:30 o'clock on circle → (14.5, 19.3)</li>
+  <li><strong>Fold crease</strong>: quadratic bezier A→B with control (15.5, 15.5) — curves inward</li>
+  <li><strong>Outer flap</strong>: cubic bezier A→B via (22, 15.5)→(22.5, 21) — bulges outside circle</li>
+  <li><strong>Eyes</strong>: filled circles at (9.25, 9.6) and (14.75, 9.6), r=0.85</li>
+  <li><strong>Smile</strong>: symmetric cubic arc from x=8.75 to x=15.25</li>
+</ul>
+
+</body>
+</html>

@@ -6,8 +6,10 @@ import { useStickerSystem } from '../editor/hooks/useStickerSystem.js';
 import StickerPanel from '../editor/components/StickerPanel.jsx';
 import DrawingToolOverlays from '../editor/components/DrawingToolOverlays.jsx';
 import ConfirmDialog from '../editor/components/ConfirmDialog.jsx';
+import ExitButton from '../editor/components/ExitButton.jsx';
 import InviteeToolbar from './components/InviteeToolbar.jsx';
 import SolidIconButton from '../../components/ui/SolidIconButton.jsx';
+import Toast from '../../components/ui/Toast.jsx';
 import { INVITEE_FLOW_STATES } from './state.js';
 
 const TIMER_STEPS = [0, 3, 6, 10];
@@ -1332,9 +1334,9 @@ export default function InviteePage() {
       </div>
 
       {/* Camera popup */}
-      <div className={`cam-popup${camPopupVisible ? ' visible' : ''}`} id="camPopup">
+      <Toast className="cam-popup" id="camPopup" visible={camPopupVisible}>
         Tap anywhere to take a photo 📸
-      </div>
+      </Toast>
 
       {/* Tap anywhere indicator */}
       <div id="tapHint" className={`${tapHintVisible ? 'visible' : ''}${tapHintHiding ? ' hiding' : ''}`}>
@@ -1417,12 +1419,7 @@ export default function InviteePage() {
       <div id="s6ScrimOverlay"></div>
 
       {/* S6 Exit button */}
-      <button className={`s6-exit-btn${s6ExitVisible ? ' visible' : ''}`} id="s6ExitBtn"
-        aria-label="Exit session" onClick={handleS6ExitClick}>
-        <svg width="26" height="26" viewBox="0 0 22 22" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round">
-          <line x1="4" y1="4" x2="18" y2="18" /><line x1="18" y1="4" x2="4" y2="18" />
-        </svg>
-      </button>
+      <ExitButton visible={s6ExitVisible} label="Exit Retake" onClick={handleS6ExitClick} />
 
       <InviteeToolbar
         visible={s6ToolsVisible}
@@ -1482,7 +1479,7 @@ export default function InviteePage() {
       </div>
 
       {/* Toast */}
-      <div className={`s6-toast${toastVisible ? ' visible' : ''}`} id="s6Toast">{toastMsg}</div>
+      <Toast className="s6-toast" id="s6Toast" visible={toastVisible}>{toastMsg}</Toast>
 
       {/* S7 pop */}
       <div className={`s7-pop${s7PopVisible ? ' visible' : ''}`} id="s7Pop"

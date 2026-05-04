@@ -7,12 +7,13 @@ import StickerEmptyState from './StickerEmptyState.jsx';
 import SelectionModeButtons from './SelectionModeButtons.jsx';
 import StickerRefineControls from './StickerRefineControls.jsx';
 import OpacitySlider from './OpacitySlider.jsx';
+import ToolIcon from '../../../components/icons/ToolIcon.jsx';
 
 const SP_TABS = [
   {
     tab: 'recents', label: 'Recents',
     icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="9" />
         <polyline points="12 7 12 12 15 15" />
       </svg>
@@ -20,23 +21,11 @@ const SP_TABS = [
   },
   {
     tab: 'mystickers', label: 'My Stickers',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.85 0 3-.5 3-.5v-3.5s-1 .5-3 .5c-3.58 0-6.5-2.92-6.5-6.5S8.42 5.5 12 5.5c2.38 0 4.47 1.28 5.62 3.19" />
-        <path d="M19 3v6h-6" />
-      </svg>
-    ),
+    icon: <ToolIcon type="stickers" />,
   },
   {
     tab: 'emoji', label: 'Emoji',
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-        <line x1="9" y1="9" x2="9.01" y2="9" />
-        <line x1="15" y1="9" x2="15.01" y2="9" />
-      </svg>
-    ),
+    icon: <span className="sp-tab-emoji">😊</span>,
   },
 ];
 

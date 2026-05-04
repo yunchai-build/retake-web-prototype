@@ -1,17 +1,14 @@
 import React from 'react';
-import GlassSurface from '../../../components/ui/GlassSurface.jsx';
-import SolidIconButton from '../../../components/ui/SolidIconButton.jsx';
+import GlassIconButton from '../../../components/ui/GlassIconButton.jsx';
 
-export default function ExitButton({ visible, out, onClick }) {
+export default function ExitButton({ visible, out, onClick, label = 'Close' }) {
   return (
-    <GlassSurface className={`s6-exit-surface${visible ? ' visible' : ''}${out ? ' out' : ''}`}>
-      <SolidIconButton
-        className="s6-exit-btn"
-        id="btnExit"
-        icon="close"
-        label="Back"
-        onClick={onClick}
-      />
-    </GlassSurface>
+    <GlassIconButton
+      className={`s6-exit-btn${visible ? ' visible' : ''}${out ? ' out' : ''}`}
+      id="btnExit"
+      icon="close"
+      label={label}
+      onClick={onClick}
+    />
   );
 }

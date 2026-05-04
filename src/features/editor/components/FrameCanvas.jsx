@@ -8,11 +8,13 @@ export default function FrameCanvas({
   brushCursorSvgRef,
   brushCursorCircleRef,
   frameScrimVisible,
+  children,
 }) {
   return (
     <>
       <div id="frameContainer" ref={frameElRef}>
         <div id="checkerBg"></div>
+        {children}
         <canvas id="editCanvas" ref={canvasRef} width="414" height="736" className="no-tool" />
         <canvas id="selectionCanvas" ref={selectionCanvasRef} width="414" height="736" />
         <div id="brushCursor" ref={brushCursorRef}>

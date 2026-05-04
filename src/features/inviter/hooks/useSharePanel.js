@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { buildInviteUrl, uploadFrame } from '../../../lib/api.js';
+import { buildInviteUrl as buildInviteLink, uploadFrame } from '../../../lib/api.js';
 
 export function useSharePanel({ frameName, showToast, setScrimVisible, getFrameDataUrl }) {
   const [sharePanelVisible, setSharePanelVisible] = useState(false);
@@ -13,7 +13,7 @@ export function useSharePanel({ frameName, showToast, setScrimVisible, getFrameD
 
     const frameDataUrl = await getFrameDataUrl();
     const { url } = await uploadFrame({ frameDataUrl, frameName });
-    return buildInviteUrl({ frameUrl: url, frameName });
+    return buildInviteLink({ frameUrl: url, frameName });
   }, [frameName, getFrameDataUrl]);
 
   const handleCopyLink = useCallback(async () => {
