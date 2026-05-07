@@ -1,0 +1,688 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.root{padding:1.5rem 0;display:flex;flex-direction:column;gap:0}
+.step-nav{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:2rem}
+.snav-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:0 4px}
+.snav-dot{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--color-text-tertiary);transition:all .2s}
+.snav-dot.active{background:#1c1c1e;border-color:#1c1c1e;color:#F0E84A}
+.snav-dot.done{background:var(--color-background-secondary);border-color:var(--color-border-secondary);color:var(--color-text-secondary)}
+.snav-label{font-size:10px;color:var(--color-text-tertiary);text-align:center;max-width:70px;line-height:1.3}
+.snav-label.active{color:var(--color-text-primary)}
+.snav-line{width:28px;height:1px;background:var(--color-border-tertiary);margin-bottom:16px}
+.panel{display:none}
+.panel.active{display:flex;flex-direction:column;align-items:center;gap:20px}
+
+.phone{width:252px;border-radius:38px;border:1.5px solid #2a2a2a;overflow:hidden;flex-shrink:0;background:#0e0e0e;display:flex;flex-direction:column}
+.phone.light{background:#f2f2f7;border-color:#d1d1d6}
+.sb{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex-shrink:0}
+.sb-t{font-size:12px;font-weight:500;color:white}
+.phone.light .sb-t{color:#1c1c1e}
+.sb-i{display:flex;gap:4px}
+.sb-i i{color:white;font-size:12px}
+.phone.light .sb-i i{color:#1c1c1e}
+
+/* ── shared meme panel styles ── */
+.meme-container{position:relative;width:210px;border-radius:14px;overflow:visible}
+
+/* distracted boyfriend meme */
+.meme-bg{width:210px;height:168px;border-radius:12px;overflow:hidden;position:relative;background:#c8a878;flex-shrink:0}
+
+/* boyfriend figure */
+.bf-body{position:absolute;left:58px;top:28px;width:46px;height:100px}
+.bf-head{width:34px;height:34px;border-radius:50%;background:#d4956a;border:2px solid #b87a50;position:absolute;top:0;left:6px}
+.bf-face-hole{width:34px;height:34px;border-radius:50%;background:#d4956a;border:2px solid #F0E84A;position:absolute;top:0;left:6px;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+.bf-shirt{width:38px;height:52px;background:#3a5a8a;border-radius:6px 6px 0 0;position:absolute;top:30px;left:4px}
+.bf-pants{width:38px;height:30px;background:#2a3a5a;position:absolute;top:78px;left:4px;border-radius:0 0 6px 6px}
+/* boyfriend arm turning -->  */
+.bf-arm{position:absolute;top:42px;right:-8px;width:22px;height:8px;background:#d4956a;border-radius:4px;transform:rotate(-30deg)}
+
+/* girlfriend figure (red) -- sender face already in -->  */
+.gf-body{position:absolute;right:28px;top:20px;width:44px;height:108px}
+.gf-head{width:32px;height:32px;border-radius:50%;background:#d4956a;border:2px solid #b87a50;position:absolute;top:0;left:6px}
+.gf-face-filled{width:32px;height:32px;border-radius:50%;border:2.5px solid #F0E84A;position:absolute;top:0;left:6px;overflow:hidden;background:#e8c49a;display:flex;align-items:center;justify-content:center}
+.gf-dress{width:36px;height:58px;background:#cc2200;border-radius:6px 6px 0 0;position:absolute;top:28px;left:4px}
+.gf-skirt{width:44px;height:28px;background:#cc2200;position:absolute;top:82px;left:0;border-radius:0 0 8px 8px}
+.gf-legs{position:absolute;top:106px;left:8px;display:flex;gap:8px}
+.gf-leg{width:10px;height:18px;background:#d4956a;border-radius:0 0 4px 4px}
+
+/* other girlfriend (left, being ignored) */
+.og-body{position:absolute;left:10px;top:30px;width:40px;height:100px}
+.og-head{width:30px;height:30px;border-radius:50%;background:#b87a50;position:absolute;top:0;left:5px}
+.og-shirt{width:34px;height:46px;background:#888;border-radius:6px 6px 0 0;position:absolute;top:26px;left:3px}
+.og-label{position:absolute;top:-18px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);border-radius:6px;padding:2px 7px;white-space:nowrap;font-size:8px;color:rgba(255,255,255,.7);font-family:monospace}
+
+/* meme text captions */
+.meme-caption-top{position:absolute;top:6px;left:50%;transform:translateX(-50%);display:flex;gap:30px;width:100%;justify-content:center;z-index:3}
+.mc-tag{background:rgba(0,0,0,.7);border-radius:6px;padding:2px 8px;font-size:9px;color:white;font-weight:700;font-family:monospace;white-space:nowrap}
+.meme-caption-bottom{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);white-space:nowrap;z-index:3}
+.mc-main{background:rgba(0,0,0,.75);border-radius:6px;padding:3px 10px;font-size:9px;color:white;font-weight:700;font-family:monospace}
+
+/* empty hole ring */
+.empty-hole{width:32px;height:32px;border-radius:50%;border:2.5px dashed rgba(240,232,74,.8);background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;position:absolute;top:0;left:6px}
+.eh-text{font-size:7px;color:rgba(255,255,255,.5);text-align:center;line-height:1.2}
+
+/* pulse on empty hole */
+.hole-pulse-outer{position:absolute;border-radius:50%;border:2px dashed rgba(240,232,74,.35);animation:hpulse 1.4s ease-in-out infinite;pointer-events:none}
+@keyframes hpulse{0%,100%{transform:scale(1);opacity:.35}50%{transform:scale(1.15);opacity:.75}}
+
+/* sender face emoji placeholder */
+.sender-face{font-size:20px;line-height:1}
+.receiver-face{font-size:16px;line-height:1;color:rgba(255,255,255,.4)}
+
+/* question strip below meme */
+.question-strip{background:#F0E84A;border-radius:0 0 12px 12px;padding:6px 12px;display:flex;align-items:center;justify-content:center;gap:5px}
+.qs-text{font-size:10px;font-weight:800;color:#0e0e0e;letter-spacing:.03em}
+
+/* frame border corners */
+.frame-corners{position:absolute;inset:-4px;pointer-events:none;z-index:5}
+.frc{position:absolute;width:16px;height:16px;border-color:#F0E84A;border-style:solid}
+.frc.tl{top:0;left:0;border-width:2.5px 0 0 2.5px;border-radius:3px 0 0 0}
+.frc.tr{top:0;right:0;border-width:2.5px 2.5px 0 0;border-radius:0 3px 0 0}
+.frc.bl{bottom:0;left:0;border-width:0 0 2.5px 2.5px;border-radius:0 0 0 3px}
+.frc.br{bottom:0;right:0;border-width:0 2.5px 2.5px 0;border-radius:0 0 3px 0}
+
+/* frame builder toolbar */
+.frame-canvas{flex:1;background:#0a0a0a;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:300px}
+.fc-grid{position:absolute;inset:0;opacity:.04;background-image:linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px);background-size:20px 20px}
+.frame-toolbar{padding:10px 14px 14px;display:flex;align-items:center;gap:8px;background:#111;flex-shrink:0;border-top:.5px solid #1e1e1e}
+.ft-tools{display:flex;gap:6px;flex:1}
+.ft-btn{width:32px;height:32px;background:rgba(255,255,255,.06);border:none;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ft-btn i{font-size:14px;color:rgba(255,255,255,.4)}
+.ft-btn.on{background:rgba(240,232,74,.12)}
+.ft-btn.on i{color:#c8b800}
+.retake-send-btn{background:#F0E84A;color:#0e0e0e;border:none;border-radius:12px;padding:9px 14px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.retake-send-btn i{font-size:14px}
+
+/* selfie preview bar at top of frame builder */
+.selfie-bar{padding:8px 14px 6px;background:#0d0d0d;display:flex;align-items:center;gap:8px;flex-shrink:0;border-bottom:.5px solid #1e1e1e}
+.selfie-label{font-size:10px;color:rgba(255,255,255,.3);flex:1}
+.selfie-face-pill{background:rgba(240,232,74,.1);border:1px solid rgba(240,232,74,.25);border-radius:999px;padding:4px 10px;display:flex;align-items:center;gap:5px}
+.sfp-face{font-size:14px;line-height:1}
+.sfp-txt{font-size:9px;color:#c8b800;font-weight:600}
+
+/* ── STEP 1: iMessage ── */
+.chat-hdr{padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid #e5e5ea;background:rgba(242,242,247,.96);flex-shrink:0}
+.chat-nm{font-size:12px;font-weight:600;color:#1c1c1e}
+.chat-st{font-size:9px;color:#8e8e93}
+.msgs{flex:1;padding:8px 10px;display:flex;flex-direction:column;gap:6px;overflow:hidden;background:#f2f2f7}
+.row{display:flex;align-items:flex-end;gap:4px}
+.row.mine{flex-direction:row-reverse}
+.av-xs{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:white;flex-shrink:0}
+.bbl{max-width:158px;border-radius:14px;padding:6px 10px;font-size:11px;line-height:1.4}
+.bbl.them{background:#e5e5ea;color:#1c1c1e}
+.bbl.me{background:#007aff;color:white}
+
+/* Retake card in chat */
+.retake-card{width:204px;background:#1c1c1e;border-radius:16px;overflow:hidden;border:1px solid #3a3a3c;cursor:pointer;transition:transform .1s}
+.retake-card:active{transform:scale(.97)}
+.rc-meme-preview{width:100%;height:148px;background:#c8a878;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+
+/* mini meme in preview */
+.mini-meme{position:relative;width:180px;height:130px;border-radius:8px;overflow:hidden;background:#c8a878}
+.mm-caption{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);border-radius:5px;padding:2px 8px;font-size:8px;color:white;font-weight:700;font-family:monospace;white-space:nowrap;z-index:3}
+
+/* sender face (filled) in mini preview */
+.mm-sender-hole{position:absolute;right:22px;top:16px;width:28px;height:28px;border-radius:50%;border:2px solid #F0E84A;overflow:hidden;background:#e8c49a;display:flex;align-items:center;justify-content:center;z-index:3}
+/* receiver hole (empty) in mini preview */
+.mm-receiver-hole{position:absolute;left:34px;top:22px;width:24px;height:24px;border-radius:50%;border:2px dashed rgba(240,232,74,.8);background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:3}
+.mmrh-txt{font-size:6px;color:rgba(255,255,255,.5);text-align:center;line-height:1.2}
+
+.rc-body{padding:8px 10px 6px}
+.rc-eyebrow{font-size:8px;color:#636366;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.rc-title{font-size:12px;font-weight:700;color:white;margin-bottom:5px;line-height:1.3}
+.rc-meta{display:flex;align-items:center;gap:6px}
+.rc-tag{font-size:9px;border-radius:4px;padding:2px 6px;font-weight:600;background:rgba(240,232,74,.12);color:#c8b800}
+.rc-warn{display:flex;align-items:center;gap:3px;background:rgba(255,59,48,.1);border-radius:5px;padding:3px 7px}
+.rc-warn i{font-size:9px;color:#ff453a}
+.rc-warn span{font-size:9px;color:#ff453a}
+.rc-hint{font-size:9px;color:#48484a;text-align:center;padding:5px 10px 8px;border-top:.5px solid #2c2c2e;display:flex;align-items:center;justify-content:center;gap:4px}
+.rc-hint i{font-size:11px;color:#636366}
+
+.ibar{padding:5px 10px 12px;display:flex;align-items:center;gap:5px;background:rgba(242,242,247,.95);border-top:.5px solid #e5e5ea;flex-shrink:0}
+.ibar-f{flex:1;background:white;border:.5px solid #d1d1d6;border-radius:14px;padding:5px 9px;font-size:11px;color:#8e8e93}
+.ibar-btn{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── STEP 2: Camera hot seat ── */
+.cam-full{position:absolute;inset:0;background:#04040a;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:26px}
+.cam-vf{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.cam-vf-grid{position:absolute;inset:0;opacity:.04;background-image:linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px);background-size:22px 22px}
+
+/* full meme in viewfinder */
+.cam-meme-frame{position:relative;z-index:2;width:210px;border-radius:12px;overflow:hidden;border:2px solid #F0E84A}
+.cmf-bg{width:210px;height:165px;background:#c8a878;position:relative;overflow:hidden}
+
+/* cam meme figures */
+.cam-bf-body{position:absolute;left:62px;top:28px;width:46px;height:100px}
+.cam-bf-head-filled{width:34px;height:34px;border-radius:50%;border:2.5px solid #F0E84A;position:absolute;top:0;left:6px;overflow:hidden;background:#e8c49a;display:flex;align-items:center;justify-content:center}
+.cam-bf-shirt{width:38px;height:52px;background:#3a5a8a;border-radius:6px 6px 0 0;position:absolute;top:30px;left:4px}
+.cam-bf-pants{width:38px;height:30px;background:#2a3a5a;position:absolute;top:78px;left:4px;border-radius:0 0 6px 6px}
+.cam-bf-arm{position:absolute;top:42px;right:-8px;width:22px;height:8px;background:#d4956a;border-radius:4px;transform:rotate(-30deg)}
+
+.cam-gf-body{position:absolute;right:28px;top:20px;width:44px;height:108px}
+.cam-gf-dress{width:36px;height:58px;background:#cc2200;border-radius:6px 6px 0 0;position:absolute;top:28px;left:4px}
+.cam-gf-skirt{width:44px;height:28px;background:#cc2200;position:absolute;top:82px;left:0;border-radius:0 0 8px 8px}
+
+.cam-og-body{position:absolute;left:10px;top:30px;width:40px;height:100px}
+.cam-og-head{width:30px;height:30px;border-radius:50%;background:#b87a50;position:absolute;top:0;left:5px}
+.cam-og-shirt{width:34px;height:46px;background:#888;border-radius:6px 6px 0 0;position:absolute;top:26px;left:3px}
+.cam-og-label{position:absolute;top:-18px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);border-radius:6px;padding:2px 7px;white-space:nowrap;font-size:8px;color:rgba(255,255,255,.7);font-family:monospace}
+
+/* SENDER face already filled in (gf position) */
+.cam-sender-filled{width:30px;height:30px;border-radius:50%;border:2.5px solid #F0E84A;position:absolute;top:0;left:7px;overflow:hidden;background:#e8c49a;display:flex;align-items:center;justify-content:center}
+/* RECEIVER hole — empty, pulsing */
+.cam-receiver-hole{width:34px;height:34px;border-radius:50%;border:2.5px dashed #F0E84A;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;position:absolute;top:0;left:6px}
+.crh-txt{font-size:7px;color:rgba(255,255,255,.55);text-align:center;line-height:1.3}
+.cam-rh-pulse{position:absolute;border-radius:50%;border:2px dashed rgba(240,232,74,.4);animation:hpulse 1.4s ease-in-out infinite;pointer-events:none;z-index:6}
+
+.cmf-caption{background:#F0E84A;padding:5px 10px;text-align:center}
+.cmf-cap-txt{font-size:9px;font-weight:800;color:#0e0e0e;font-family:monospace}
+
+.cam-top-left{position:absolute;top:14px;left:14px;z-index:5}
+.ctl-lbl{font-size:8px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em}
+.ctl-nm{font-size:12px;font-weight:700;color:white;margin-top:2px}
+.ctl-ctx{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px;font-style:italic}
+
+.cam-timer{position:absolute;top:14px;right:14px;z-index:5;display:flex;flex-direction:column;align-items:center;gap:2px}
+.ctw{position:relative;width:52px;height:52px}
+.ctw svg{width:52px;height:52px}
+.ctw-n{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:17px;font-weight:800;color:#F0E84A}
+.ctw-lbl{font-size:8px;color:rgba(255,255,255,.28);letter-spacing:.06em}
+
+.cam-sh-area{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:7px;margin-top:24px}
+.cam-sh-lbl{font-size:9px;color:rgba(255,255,255,.28);letter-spacing:.06em}
+.shutter{width:62px;height:62px;border-radius:50%;border:3px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.shutter-in{width:50px;height:50px;border-radius:50%;background:white;transition:transform .1s,background .12s}
+.shutter:active .shutter-in{transform:scale(.88);background:#F0E84A}
+
+/* ── STEP 3: Result ── */
+.result-wrap{width:252px;display:flex;flex-direction:column;gap:10px}
+.result-card{background:#161616;border-radius:18px;overflow:hidden;border:1.5px solid #2a2a2a}
+
+/* completed meme at top */
+.rc-meme-complete{width:100%;background:#c8a878;position:relative;overflow:hidden}
+.rmc-inner{width:100%;height:168px;position:relative}
+.rmc-caption{background:#F0E84A;padding:6px 12px;text-align:center}
+.rmc-cap-txt{font-size:10px;font-weight:800;color:#0e0e0e;font-family:monospace}
+
+/* both faces filled */
+.rmc-bf{position:absolute;left:62px;top:28px;width:46px;height:100px}
+.rmc-gf{position:absolute;right:28px;top:20px;width:44px;height:108px}
+.rmc-og{position:absolute;left:10px;top:30px;width:40px;height:100px}
+
+.face-circle-filled{border-radius:50%;border:2.5px solid #F0E84A;overflow:hidden;display:flex;align-items:center;justify-content:center;position:absolute}
+
+/* time stat */
+.rc-stat-row{padding:12px 14px 8px;display:flex;align-items:center;gap:12px;border-top:.5px solid #222}
+.rc-time-big{display:flex;flex-direction:column;gap:0}
+.rc-time-num{font-size:30px;font-weight:800;color:white;line-height:1}
+.rc-time-unit{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.06em}
+.rc-stat-div{width:1px;height:34px;background:#2a2a2a;flex-shrink:0}
+.rc-stat-right{display:flex;flex-direction:column;gap:3px}
+.rc-stat-label{font-size:11px;font-weight:600;color:white}
+.rc-stat-sub{font-size:10px;color:rgba(255,255,255,.35);line-height:1.4}
+
+.rc-actions{padding:0 12px 12px;display:flex;gap:6px}
+.rc-share{flex:1;background:#F0E84A;color:#0e0e0e;border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+.rc-share i{font-size:14px}
+.rc-again{background:#2a2a2a;color:rgba(255,255,255,.5);border:none;border-radius:10px;padding:10px 12px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px}
+.rc-again i{font-size:13px}
+
+/* desc */
+.desc-card{width:252px;background:var(--color-background-primary);border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px}
+.dc-lbl{font-size:10px;color:var(--color-text-tertiary);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.dc-title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.dc-body{font-size:12px;color:var(--color-text-secondary);line-height:1.65}
+.dc-insight{margin-top:10px;border-left:2px solid #F0E84A;padding-left:10px;font-size:11px;color:var(--color-text-tertiary);font-style:italic;line-height:1.5}
+.nxt{width:100%;margin-top:12px;background:#1c1c1e;color:#F0E84A;border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:500;cursor:pointer}
+.nxt:active{opacity:.8}
+</style>
+
+<h2 class="sr-only">Retake meme hole — sender puts their face in, receiver has 10 seconds to fill the empty hole</h2>
+
+<div class="root">
+  <div class="step-nav">
+    <div class="snav-item" onclick="goStep(0)">
+      <div class="snav-dot active" id="sd0"><i class="ti ti-mood-smile" style="font-size:11px" aria-hidden="true"></i></div>
+      <div class="snav-label active" id="sl0">Make the<br>frame</div>
+    </div>
+    <div class="snav-line"></div>
+    <div class="snav-item" onclick="goStep(1)">
+      <div class="snav-dot" id="sd1"><i class="ti ti-send" style="font-size:11px" aria-hidden="true"></i></div>
+      <div class="snav-label" id="sl1">Send<br>Retake!</div>
+    </div>
+    <div class="snav-line"></div>
+    <div class="snav-item" onclick="goStep(2)">
+      <div class="snav-dot" id="sd2"><i class="ti ti-face-id" style="font-size:11px" aria-hidden="true"></i></div>
+      <div class="snav-label" id="sl2">Hot seat<br>10 secs</div>
+    </div>
+    <div class="snav-line"></div>
+    <div class="snav-item" onclick="goStep(3)">
+      <div class="snav-dot" id="sd3"><i class="ti ti-stars" style="font-size:11px" aria-hidden="true"></i></div>
+      <div class="snav-label" id="sl3">Meme<br>complete</div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 0: Make the frame ══ -->
+  <div class="panel active" id="p0">
+    <div class="phone" style="height:540px;">
+      <div class="sb"><span class="sb-t">11:14 PM</span><div class="sb-i"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery" aria-hidden="true"></i></div></div>
+
+      <!-- selfie already taken -->
+      <div class="selfie-bar">
+        <div class="selfie-label">your face is already in</div>
+        <div class="selfie-face-pill">
+          <div class="sfp-face">😏</div>
+          <div class="sfp-txt">yunchai · placed</div>
+        </div>
+      </div>
+
+      <div class="frame-canvas">
+        <div class="fc-grid"></div>
+
+        <!-- THE MEME — distracted boyfriend, sender face filled, receiver hole empty -->
+        <div class="meme-container">
+          <div class="frame-corners">
+            <div class="frc tl"></div><div class="frc tr"></div>
+            <div class="frc bl"></div><div class="frc br"></div>
+          </div>
+
+          <div class="meme-bg">
+
+            <!-- captions -->
+            <div class="meme-caption-top" style="top:4px;gap:0;justify-content:space-around;">
+              <div class="mc-tag" style="font-size:7px;">you (ignoring responsibilities)</div>
+              <div class="mc-tag" style="font-size:7px;">your friend</div>
+            </div>
+
+            <!-- ignored girl on left (generic) -->
+            <div class="og-body">
+              <div class="og-label">responsibilities</div>
+              <div class="og-head"></div>
+              <div class="og-shirt"></div>
+            </div>
+
+            <!-- boyfriend — SENDER face already in -->
+            <div class="bf-body">
+              <div class="bf-face-hole" style="cursor:default;border-color:#F0E84A;border-style:solid;">
+                <div class="sender-face">😏</div>
+              </div>
+              <div class="bf-shirt"></div>
+              <div class="bf-pants"></div>
+              <div class="bf-arm"></div>
+            </div>
+
+            <!-- girlfriend on right — RECEIVER hole empty, pulsing -->
+            <div class="gf-body">
+              <!-- empty hole -->
+              <div style="position:relative;width:44px;height:44px;">
+                <div class="empty-hole">
+                  <div class="eh-text">jisoo<br>goes<br>here</div>
+                </div>
+                <div class="hole-pulse-outer" style="width:44px;height:44px;top:0;left:0;"></div>
+              </div>
+              <div class="gf-dress"></div>
+              <div class="gf-skirt"></div>
+              <div class="gf-legs">
+                <div class="gf-leg"></div>
+                <div class="gf-leg"></div>
+              </div>
+            </div>
+
+            <!-- bottom caption -->
+            <div class="meme-caption-bottom">
+              <div class="mc-main">bro this is us right now</div>
+            </div>
+          </div>
+
+          <!-- question strip -->
+          <div class="question-strip">
+            <i class="ti ti-arrow-right" style="font-size:12px;color:#0e0e0e;" aria-hidden="true"></i>
+            <div class="qs-text">fill the other hole — 10 seconds</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="frame-toolbar">
+        <div class="ft-tools">
+          <div class="ft-btn on"><i class="ti ti-face-id" aria-hidden="true"></i></div>
+          <div class="ft-btn"><i class="ti ti-typography" aria-hidden="true"></i></div>
+          <div class="ft-btn"><i class="ti ti-sticker" aria-hidden="true"></i></div>
+          <div class="ft-btn"><i class="ti ti-adjustments" aria-hidden="true"></i></div>
+        </div>
+        <button class="retake-send-btn" onclick="goStep(1)">
+          <i class="ti ti-send" aria-hidden="true"></i>
+          Send Retake!
+        </button>
+      </div>
+    </div>
+
+    <div class="desc-card">
+      <div class="dc-lbl">Step 1 · yunchai makes the frame</div>
+      <div class="dc-title">Your face goes in first. Theirs is the punchline.</div>
+      <div class="dc-body">yunchai picks "distracted boyfriend," takes a quick selfie, and it drops straight into the boyfriend hole — the one turning away. The girlfriend hole on the right stays empty with a pulsing ring. That's jisoo's spot. Hit Send Retake! and she has 10 seconds.</div>
+      <div class="dc-insight">"You cast yourself. Your friend completes the joke."</div>
+      <button class="nxt" onclick="goStep(1)">Send Retake! to jisoo →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 1: iMessage ══ -->
+  <div class="panel" id="p1">
+    <div class="phone light" style="height:560px;display:flex;flex-direction:column;">
+      <div class="sb light"><span class="sb-t" style="color:#1c1c1e;">11:14 PM</span><div class="sb-i"><i class="ti ti-wifi" style="color:#1c1c1e;font-size:12px" aria-hidden="true"></i><i class="ti ti-battery" style="color:#1c1c1e;font-size:12px" aria-hidden="true"></i></div></div>
+      <div class="chat-hdr">
+        <i class="ti ti-chevron-left" style="color:#007aff;font-size:14px" aria-hidden="true"></i>
+        <div style="width:28px;height:28px;border-radius:50%;background:#e84393;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:white;flex-shrink:0;">Y</div>
+        <div>
+          <div class="chat-nm">yunchai</div>
+          <div class="chat-st">active now</div>
+        </div>
+      </div>
+      <div class="msgs">
+        <div class="row mine"><div class="bbl me">bro this is us right now 💀</div></div>
+        <div class="row">
+          <div class="av-xs" style="background:#e84393;">Y</div>
+          <div class="bbl them">u have to fill the other hole</div>
+        </div>
+        <div class="row">
+          <div class="av-xs" style="background:#e84393;">Y</div>
+          <div class="bbl them">10 seconds when u open it btw</div>
+        </div>
+
+        <!-- Retake card — receiver side -->
+        <div class="row mine" style="margin-top:4px;">
+          <div class="retake-card" onclick="goStep(2)">
+            <div class="rc-meme-preview">
+              <!-- mini distracted boyfriend with sender face in, receiver hole empty -->
+              <div class="mini-meme">
+                <!-- meme bg -->
+                <div style="position:absolute;inset:0;background:#c8a878;"></div>
+
+                <!-- left ignored girl -->
+                <div style="position:absolute;left:8px;top:20px;width:32px;height:80px;">
+                  <div style="width:22px;height:22px;border-radius:50%;background:#b87a50;position:absolute;top:0;left:5px;"></div>
+                  <div style="width:26px;height:36px;background:#888;border-radius:4px 4px 0 0;position:absolute;top:20px;left:3px;"></div>
+                </div>
+
+                <!-- boyfriend — sender face in -->
+                <div style="position:absolute;left:52px;top:18px;width:36px;height:80px;">
+                  <div class="mm-sender-hole"><div style="font-size:16px;line-height:1;">😏</div></div>
+                  <div style="width:30px;height:40px;background:#3a5a8a;border-radius:4px 4px 0 0;position:absolute;top:26px;left:3px;"></div>
+                  <div style="width:30px;height:22px;background:#2a3a5a;position:absolute;top:62px;left:3px;border-radius:0 0 4px 4px;"></div>
+                </div>
+
+                <!-- girlfriend — receiver hole empty -->
+                <div style="position:absolute;right:18px;top:12px;width:36px;height:88px;">
+                  <div class="mm-receiver-hole"><div class="mmrh-txt">u?</div></div>
+                  <div style="width:28px;height:44px;background:#cc2200;border-radius:4px 4px 0 0;position:absolute;top:22px;left:4px;"></div>
+                  <div style="width:34px;height:22px;background:#cc2200;position:absolute;top:62px;left:1px;border-radius:0 0 6px 6px;"></div>
+                </div>
+
+                <div class="mm-caption">bro this is us right now</div>
+              </div>
+            </div>
+
+            <div class="rc-body">
+              <div class="rc-eyebrow">Retake from yunchai</div>
+              <div class="rc-title">bro this is us right now 💀<br>fill the other hole</div>
+              <div class="rc-meta">
+                <div class="rc-tag">meme hole</div>
+                <div class="rc-warn">
+                  <i class="ti ti-clock" aria-hidden="true"></i>
+                  <span>open · 10s starts</span>
+                </div>
+              </div>
+            </div>
+            <div class="rc-hint">
+              <i class="ti ti-hand-click" aria-hidden="true"></i>
+              tap to open your Retake!
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="av-xs" style="background:#e84393;">Y</div>
+          <div class="bbl them" style="background:#e5e5ea;color:#1c1c1e;">LMAOOO i see ur face in it already</div>
+        </div>
+        <div class="row">
+          <div class="av-xs" style="background:#e84393;">Y</div>
+          <div class="bbl them" style="background:#e5e5ea;color:#1c1c1e;">ok opening 😭</div>
+        </div>
+      </div>
+      <div class="ibar">
+        <div class="ibar-f">iMessage</div>
+        <div class="ibar-btn" style="background:#8e8e93;"><i class="ti ti-apps" style="font-size:11px;color:white;" aria-hidden="true"></i></div>
+        <div class="ibar-btn" style="background:#007aff;" onclick="goStep(2)"><i class="ti ti-arrow-up" style="font-size:11px;color:white;" aria-hidden="true"></i></div>
+      </div>
+    </div>
+
+    <div class="desc-card">
+      <div class="dc-lbl">Step 2 · jisoo's phone</div>
+      <div class="dc-title">She can already see yunchai's face in the preview</div>
+      <div class="dc-body">The Retake card shows the meme thumbnail — yunchai's 😏 face is visible in the boyfriend hole, and there's a clearly empty dashed ring where jisoo needs to go. "LMAOOO i see ur face in it already" — she's already invested before she even taps. 10 seconds from the moment she opens it.</div>
+      <div class="dc-insight">"Seeing the sender's face already in it makes you want to complete it instantly."</div>
+      <button class="nxt" onclick="goStep(2)">jisoo opens it →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 2: Hot seat ══ -->
+  <div class="panel" id="p2">
+    <div class="phone" style="height:560px;position:relative;display:flex;flex-direction:column;">
+      <div class="cam-full" id="camFull">
+        <div class="cam-vf">
+          <div class="cam-vf-grid"></div>
+
+          <!-- full meme in viewfinder -->
+          <div class="cam-meme-frame">
+            <div class="cmf-bg">
+              <!-- captions -->
+              <div style="position:absolute;top:4px;left:0;right:0;display:flex;justify-content:space-around;z-index:4;">
+                <div style="background:rgba(0,0,0,.7);border-radius:5px;padding:2px 7px;font-size:7px;color:white;font-weight:700;font-family:monospace;">you (ignoring responsibilities)</div>
+                <div style="background:rgba(0,0,0,.7);border-radius:5px;padding:2px 7px;font-size:7px;color:white;font-weight:700;font-family:monospace;">your friend</div>
+              </div>
+
+              <!-- ignored girl -->
+              <div class="cam-og-body">
+                <div class="cam-og-label">responsibilities</div>
+                <div class="cam-og-head"></div>
+                <div class="cam-og-shirt"></div>
+              </div>
+
+              <!-- boyfriend — SENDER face filled -->
+              <div class="cam-bf-body">
+                <div class="cam-bf-head-filled">
+                  <div style="font-size:20px;line-height:1;">😏</div>
+                </div>
+                <div class="cam-bf-shirt"></div>
+                <div class="cam-bf-pants"></div>
+                <div class="cam-bf-arm"></div>
+              </div>
+
+              <!-- girlfriend — RECEIVER hole, empty + pulsing -->
+              <div class="cam-gf-body">
+                <div style="position:relative;width:44px;height:44px;">
+                  <div class="cam-receiver-hole">
+                    <div class="crh-txt">align<br>your<br>face</div>
+                  </div>
+                  <div class="cam-rh-pulse" style="width:52px;height:52px;top:-4px;left:-4px;"></div>
+                </div>
+                <div class="cam-gf-dress"></div>
+                <div class="cam-gf-skirt"></div>
+              </div>
+
+              <!-- bottom text -->
+              <div style="position:absolute;bottom:5px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);border-radius:6px;padding:3px 10px;z-index:4;white-space:nowrap;">
+                <div style="font-size:9px;font-weight:700;color:white;font-family:monospace;">bro this is us right now</div>
+              </div>
+            </div>
+            <div class="cmf-caption">
+              <div class="cmf-cap-txt">move right — your face goes in the hole</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- top left -->
+        <div class="cam-top-left">
+          <div class="ctl-lbl">Retake from</div>
+          <div class="ctl-nm">yunchai 😏</div>
+          <div class="ctl-ctx">she's already in it.<br>now complete the meme.</div>
+        </div>
+
+        <!-- 10s timer -->
+        <div class="cam-timer">
+          <div class="ctw">
+            <svg viewBox="0 0 52 52">
+              <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="3.5"/>
+              <circle id="camRing" cx="26" cy="26" r="21" fill="none" stroke="#F0E84A" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="131.9" stroke-dashoffset="0" transform="rotate(-90 26 26)"/>
+            </svg>
+            <div class="ctw-n" id="camNum">10</div>
+          </div>
+          <div class="ctw-lbl">seconds</div>
+        </div>
+
+        <div class="cam-sh-area">
+          <div class="cam-sh-lbl">align · tap to complete the meme</div>
+          <div class="shutter" onclick="shoot()"><div class="shutter-in"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="desc-card">
+      <div class="dc-lbl">Step 3 · jisoo's camera</div>
+      <div class="dc-title">Full meme. yunchai already in it. 10 seconds.</div>
+      <div class="dc-body">The whole distracted boyfriend meme is in jisoo's viewfinder. yunchai's 😏 face is already in the boyfriend hole — jisoo can see it. The pulsing ring on the girlfriend side is where she needs to go. She physically moves her phone to align her face. The meme is literally incomplete without her.</div>
+      <div class="dc-insight">"The meme is broken until she fills it. That urgency is the whole game."</div>
+      <button class="nxt" onclick="shoot()">jisoo shoots →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 3: Result ══ -->
+  <div class="panel" id="p3">
+    <div class="result-wrap">
+      <div class="result-card">
+
+        <!-- completed meme — both faces in -->
+        <div class="rc-meme-complete">
+          <div class="rmc-inner">
+            <div style="position:absolute;inset:0;background:#c8a878;"></div>
+
+            <!-- captions -->
+            <div style="position:absolute;top:5px;left:0;right:0;display:flex;justify-content:space-around;z-index:5;">
+              <div style="background:rgba(0,0,0,.7);border-radius:5px;padding:2px 7px;font-size:7px;color:white;font-weight:700;font-family:monospace;">you (ignoring responsibilities)</div>
+              <div style="background:rgba(0,0,0,.7);border-radius:5px;padding:2px 7px;font-size:7px;color:white;font-weight:700;font-family:monospace;">your friend</div>
+            </div>
+
+            <!-- left girl -->
+            <div style="position:absolute;left:10px;top:30px;width:40px;height:100px;">
+              <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);border-radius:6px;padding:2px 7px;white-space:nowrap;font-size:8px;color:rgba(255,255,255,.7);font-family:monospace;">responsibilities</div>
+              <div style="width:30px;height:30px;border-radius:50%;background:#b87a50;position:absolute;top:0;left:5px;"></div>
+              <div style="width:34px;height:46px;background:#888;border-radius:6px 6px 0 0;position:absolute;top:26px;left:3px;"></div>
+            </div>
+
+            <!-- boyfriend — yunchai -->
+            <div style="position:absolute;left:62px;top:28px;width:46px;height:100px;">
+              <div class="face-circle-filled" style="width:34px;height:34px;top:0;left:6px;">
+                <div style="font-size:22px;line-height:1;">😏</div>
+              </div>
+              <div style="width:38px;height:52px;background:#3a5a8a;border-radius:6px 6px 0 0;position:absolute;top:30px;left:4px;"></div>
+              <div style="width:38px;height:30px;background:#2a3a5a;position:absolute;top:78px;left:4px;border-radius:0 0 6px 6px;"></div>
+              <div style="position:absolute;top:42px;right:-8px;width:22px;height:8px;background:#d4956a;border-radius:4px;transform:rotate(-30deg);"></div>
+            </div>
+
+            <!-- girlfriend — jisoo -->
+            <div style="position:absolute;right:28px;top:20px;width:44px;height:108px;">
+              <div class="face-circle-filled" style="width:32px;height:32px;top:0;left:6px;">
+                <div style="font-size:20px;line-height:1;">😭</div>
+              </div>
+              <div style="width:36px;height:58px;background:#cc2200;border-radius:6px 6px 0 0;position:absolute;top:28px;left:4px;"></div>
+              <div style="width:44px;height:28px;background:#cc2200;position:absolute;top:82px;left:0;border-radius:0 0 8px 8px;"></div>
+            </div>
+
+            <!-- bottom caption -->
+            <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);border-radius:6px;padding:3px 10px;z-index:4;white-space:nowrap;">
+              <div style="font-size:9px;font-weight:700;color:white;font-family:monospace;">bro this is us right now</div>
+            </div>
+          </div>
+
+          <!-- names under faces -->
+          <div style="background:#111;padding:6px 12px;display:flex;justify-content:space-around;border-top:.5px solid #222;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+              <div style="font-size:9px;color:rgba(255,255,255,.5);">yunchai</div>
+              <div style="font-size:8px;color:rgba(255,255,255,.25);">sent the Retake</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+              <div style="font-size:9px;color:rgba(255,255,255,.5);">jisoo</div>
+              <div style="font-size:8px;color:rgba(255,255,255,.25);">completed it</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- time stat -->
+        <div class="rc-stat-row">
+          <div class="rc-time-big">
+            <div class="rc-time-num">2.1</div>
+            <div class="rc-time-unit">SECONDS</div>
+          </div>
+          <div class="rc-stat-div"></div>
+          <div class="rc-stat-right">
+            <div class="rc-stat-label">she didn't even hesitate</div>
+            <div class="rc-stat-sub">2.1s to complete the meme.<br>instant recognition. no prep.</div>
+          </div>
+        </div>
+
+        <div class="rc-actions">
+          <button class="rc-share">
+            <i class="ti ti-share" aria-hidden="true"></i>
+            Share this meme
+          </button>
+          <button class="rc-again" onclick="goStep(0)">
+            <i class="ti ti-refresh" aria-hidden="true"></i>
+            New meme
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="desc-card">
+      <div class="dc-lbl">Step 4 · meme complete</div>
+      <div class="dc-title">Both faces in. 2.1 seconds.</div>
+      <div class="dc-body">The completed meme — yunchai's 😏 in the boyfriend spot, jisoo's 😭 in the girlfriend spot — is now a fully real image both of them made together. jisoo shot at 2.1 seconds. She saw yunchai already in it and immediately got it. This gets shared everywhere instantly.</div>
+      <div class="dc-insight">"When you can see the sender already in the meme, completing it feels inevitable."</div>
+      <button class="nxt" onclick="goStep(0)">Make another one ↩</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var cur=0,iv=null,cnt=10,C=131.9;
+function goStep(n){
+  document.getElementById('p'+cur).classList.remove('active');
+  cur=n;document.getElementById('p'+n).classList.add('active');
+  for(var i=0;i<4;i++){
+    var d=document.getElementById('sd'+i),l=document.getElementById('sl'+i);
+    d.classList.remove('active','done');l.classList.remove('active');
+    if(i<n)d.classList.add('done');
+    else if(i===n){d.classList.add('active');l.classList.add('active');}
+  }
+  if(n===2)startTimer();else stopTimer();
+}
+function startTimer(){
+  stopTimer();cnt=10;updateRing();
+  iv=setInterval(function(){cnt--;if(cnt<0){clearInterval(iv);return;}updateRing();},1000);
+}
+function stopTimer(){if(iv){clearInterval(iv);iv=null;}}
+function updateRing(){
+  var n=Math.max(0,cnt);
+  document.getElementById('camNum').textContent=n;
+  var r=document.getElementById('camRing');
+  r.style.strokeDashoffset=C*((10-n)/10);
+  var c=n<=3?'#ff453a':n<=6?'#ff9f0a':'#F0E84A';
+  r.style.stroke=c;document.getElementById('camNum').style.color=c;
+}
+function shoot(){
+  stopTimer();
+  var f=document.getElementById('camFull');
+  f.style.background='white';
+  setTimeout(function(){f.style.background='#04040a';goStep(3);},120);
+}
+</script>

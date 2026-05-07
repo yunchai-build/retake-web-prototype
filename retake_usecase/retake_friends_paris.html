@@ -1,0 +1,404 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.root{padding:1.5rem 0;display:flex;flex-direction:column;gap:0}
+.step-nav{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:2rem}
+.snav-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:0 6px}
+.snav-dot{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--color-text-tertiary);transition:all .2s}
+.snav-dot.active{background:#1c1c1e;border-color:#1c1c1e;color:#F0E84A}
+.snav-dot.done{background:var(--color-background-secondary);border-color:var(--color-border-secondary);color:var(--color-text-secondary)}
+.snav-label{font-size:10px;color:var(--color-text-tertiary);text-align:center;max-width:72px;line-height:1.3}
+.snav-label.active{color:var(--color-text-primary)}
+.snav-line{width:32px;height:1px;background:var(--color-border-tertiary);margin-bottom:16px}
+.panel{display:none}
+.panel.active{display:flex;flex-direction:column;align-items:center;gap:20px}
+.phone{width:252px;border-radius:38px;border:1.5px solid #2a2a2a;overflow:hidden;flex-shrink:0;background:#0e0e0e;display:flex;flex-direction:column}
+.phone.light{background:#f2f2f7;border-color:#d1d1d6}
+.sb{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex-shrink:0}
+.sb-t{font-size:12px;font-weight:500;color:white}
+.phone.light .sb-t{color:#1c1c1e}
+.sb-i{display:flex;gap:4px}
+.sb-i i{color:white;font-size:12px}
+.phone.light .sb-i i{color:#1c1c1e}
+
+.fb-canvas{flex:1;background:#0a0a0a;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:340px}
+.fb-grid{position:absolute;inset:0;opacity:.05;background-image:linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px);background-size:20px 20px}
+.frame-border{position:absolute;inset:14px;border:2px solid rgba(240,232,74,.55);border-radius:12px;pointer-events:none}
+.fc{position:absolute;width:20px;height:20px;border-color:#F0E84A;border-style:solid}
+.fc.tl{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.fc.tr{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+.fc.bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+.fc.br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+.sticker{position:absolute;line-height:1;pointer-events:none;z-index:4}
+.frame-title-badge{position:absolute;top:22px;left:50%;transform:translateX(-50%);background:#F0E84A;border-radius:20px;padding:4px 14px;z-index:4;white-space:nowrap}
+.ftb-text{font-size:10px;font-weight:700;color:#0e0e0e;letter-spacing:.06em;text-transform:uppercase}
+.date-stamp{position:absolute;bottom:22px;right:22px;z-index:4}
+.ds-text{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:.08em;font-family:monospace}
+.fb-bar{padding:10px 14px 14px;display:flex;align-items:center;gap:8px;background:#111;flex-shrink:0;border-top:.5px solid #222}
+.tb-tools{display:flex;gap:6px;flex:1}
+.tb-btn{width:32px;height:32px;background:rgba(255,255,255,.06);border:none;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tb-btn i{font-size:14px;color:rgba(255,255,255,.45)}
+.tb-btn.on{background:rgba(255,255,255,.14)}
+.tb-btn.on i{color:white}
+.share-btn{background:#F0E84A;color:#0e0e0e;border:none;border-radius:11px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.timer-row{display:flex;align-items:center;gap:6px;padding:6px 14px;background:#0d0d0d;flex-shrink:0}
+.timer-lbl{font-size:10px;color:rgba(255,255,255,.3);flex:1}
+.tog{width:34px;height:19px;border-radius:10px;position:relative;cursor:pointer;background:#F0E84A;flex-shrink:0;transition:background .18s}
+.tog.off{background:#333}
+.tog-k{width:15px;height:15px;background:white;border-radius:50%;position:absolute;top:2px;left:17px;transition:left .16s}
+.tog.off .tog-k{left:2px}
+.tog-val{font-size:10px;color:#F0E84A;min-width:28px;text-align:right}
+
+.gc-hdr{padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid #e5e5ea;background:rgba(242,242,247,.96);flex-shrink:0}
+.gc-av-group{display:flex;align-items:center;margin-right:4px}
+.gc-av-sm{width:20px;height:20px;border-radius:50%;border:1.5px solid white;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:white;flex-shrink:0}
+.gc-av-sm:not(:first-child){margin-left:-6px}
+.gc-nm{font-size:12px;font-weight:600;color:#1c1c1e}
+.gc-st{font-size:9px;color:#8e8e93}
+.msgs{flex:1;padding:8px 10px;display:flex;flex-direction:column;gap:6px;overflow:hidden;background:#f2f2f7}
+.row{display:flex;align-items:flex-end;gap:4px}
+.row.mine{flex-direction:row-reverse}
+.row.center{justify-content:center}
+.av-xs{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:white;flex-shrink:0}
+.bbl{max-width:155px;border-radius:14px;padding:6px 10px;font-size:11px;line-height:1.4}
+.bbl.them{background:#e5e5ea;color:#1c1c1e}
+.bbl.me{background:#007aff;color:white}
+.sender-nm{font-size:9px;color:#8e8e93;margin-left:26px;margin-bottom:1px}
+.system-msg{font-size:9px;color:#8e8e93;background:rgba(142,142,147,.12);border-radius:8px;padding:3px 10px}
+.rb{width:200px;background:#1c1c1e;border-radius:16px;overflow:hidden;border:1px solid #3a3a3c;cursor:pointer;transition:transform .1s}
+.rb:active{transform:scale(.97)}
+.rb-prev{width:100%;height:110px;background:#0a0a0a;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.rb-prev-grid{position:absolute;inset:0;opacity:.04;background-image:linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px);background-size:16px 16px}
+.rb-frame-preview{position:relative;width:90px;height:80px;z-index:2}
+.rb-fp-border{position:absolute;inset:0;border:1.5px solid rgba(240,232,74,.5);border-radius:8px}
+.rb-fp-corner{position:absolute;width:10px;height:10px;border-color:#F0E84A;border-style:solid}
+.rb-fp-corner.tl{top:-1px;left:-1px;border-width:2px 0 0 2px;border-radius:2px 0 0 0}
+.rb-fp-corner.tr{top:-1px;right:-1px;border-width:2px 2px 0 0;border-radius:0 2px 0 0}
+.rb-fp-corner.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px;border-radius:0 0 0 2px}
+.rb-fp-corner.br{bottom:-1px;right:-1px;border-width:0 2px 2px 0;border-radius:0 0 2px 0}
+.rb-fp-title{position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:#F0E84A;border-radius:4px;padding:1px 6px;white-space:nowrap;font-size:7px;font-weight:700;color:#0e0e0e;z-index:3}
+.rb-fp-content{position:absolute;inset:6px;display:flex;align-items:center;justify-content:center}
+.rb-body{padding:8px 10px}
+.rb-from{font-size:8px;color:#636366;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.rb-title{font-size:11px;font-weight:700;color:white;margin-bottom:4px}
+.rb-warn{display:flex;align-items:center;gap:3px;background:rgba(255,59,48,.1);border-radius:5px;padding:3px 7px;width:fit-content}
+.rb-warn i{font-size:9px;color:#ff453a}
+.rb-warn span{font-size:9px;color:#ff453a}
+.rb-hint{font-size:9px;color:#48484a;text-align:center;padding:5px 10px 8px;border-top:.5px solid #2c2c2e}
+.ibar{padding:5px 10px 12px;display:flex;align-items:center;gap:5px;background:rgba(242,242,247,.95);border-top:.5px solid #e5e5ea;flex-shrink:0}
+.ibar-f{flex:1;background:white;border:.5px solid #d1d1d6;border-radius:14px;padding:5px 9px;font-size:11px;color:#8e8e93}
+.ibar-btn{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+.cam-full{position:absolute;inset:0;background:#06060e;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:28px}
+.cam-vf{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.cam-vf-grid{position:absolute;inset:0;opacity:.04;background-image:linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px);background-size:22px 22px}
+.cam-frame-overlay{position:relative;width:190px;height:190px}
+.cfo-border{position:absolute;inset:0;border:2px solid rgba(240,232,74,.4);border-radius:10px}
+.cfc{position:absolute;width:18px;height:18px;border-color:#F0E84A;border-style:solid}
+.cfc.tl{top:-1px;left:-1px;border-width:2.5px 0 0 2.5px;border-radius:3px 0 0 0}
+.cfc.tr{top:-1px;right:-1px;border-width:2.5px 2.5px 0 0;border-radius:0 3px 0 0}
+.cfc.bl{bottom:-1px;left:-1px;border-width:0 0 2.5px 2.5px;border-radius:0 0 0 3px}
+.cfc.br{bottom:-1px;right:-1px;border-width:0 2.5px 2.5px 0;border-radius:0 0 3px 0}
+.cfo-title{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#F0E84A;border-radius:10px;padding:2px 10px;white-space:nowrap;font-size:8px;font-weight:700;color:#0e0e0e;z-index:3}
+.cfo-date{position:absolute;bottom:6px;right:8px;font-size:7px;color:rgba(255,255,255,.22);font-family:monospace;letter-spacing:.05em}
+
+.cam-top-left{position:absolute;top:14px;left:14px;z-index:5}
+.ctl-lbl{font-size:8px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em}
+.ctl-gc{display:flex;align-items:center;gap:3px;margin-top:3px}
+.ctl-av{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:white;border:1px solid rgba(255,255,255,.2)}
+.ctl-av:not(:first-child){margin-left:-4px}
+.ctl-txt{font-size:10px;color:rgba(255,255,255,.6);margin-left:5px;font-weight:500}
+.cam-timer-wrap{position:absolute;top:14px;right:14px;z-index:5;display:flex;flex-direction:column;align-items:center;gap:2px}
+.ctw-ring{position:relative;width:50px;height:50px}
+.ctw-ring svg{width:50px;height:50px}
+.ctw-n{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:15px;font-weight:700;color:#F0E84A}
+.ctw-lbl{font-size:8px;color:rgba(255,255,255,.28);letter-spacing:.06em}
+.cam-bottom-z{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:8px}
+.cam-sh-lbl{font-size:9px;color:rgba(255,255,255,.28);letter-spacing:.06em}
+.shutter{width:62px;height:62px;border-radius:50%;border:3px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.shutter-in{width:50px;height:50px;border-radius:50%;background:white;transition:transform .1s,background .12s}
+.shutter:active .shutter-in{transform:scale(.88);background:#F0E84A}
+
+.desc-card{width:252px;background:var(--color-background-primary);border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px}
+.dc-lbl{font-size:10px;color:var(--color-text-tertiary);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.dc-title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.dc-body{font-size:12px;color:var(--color-text-secondary);line-height:1.65}
+.dc-insight{margin-top:10px;border-left:2px solid #F0E84A;padding-left:10px;font-size:11px;color:var(--color-text-tertiary);font-style:italic;line-height:1.5}
+.nxt{width:100%;margin-top:12px;background:#1c1c1e;color:#F0E84A;border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:500;cursor:pointer;transition:opacity .12s}
+.nxt:active{opacity:.8}
+</style>
+
+<h2 class="sr-only">Retake Paris croissant group reaction — fixed croissant illustration, bigger stickers</h2>
+
+<div class="root">
+  <div class="step-nav">
+    <div class="snav-item" onclick="goStep(0)">
+      <div class="snav-dot active" id="sd0"><i class="ti ti-frame" style="font-size:11px" aria-hidden="true"></i></div>
+      <div class="snav-label active" id="sl0">Make the<br>frame</div>
+    </div>
+    <div class="snav-line"></div>
+    <div class="snav-item" onclick="goStep(1)">
+      <div class="snav-dot" id="sd1"><i class="ti ti-messages" style="font-size:11px" aria-hidden="true"></i></div>
+      <div class="snav-label" id="sl1">Drop in<br>group chat</div>
+    </div>
+    <div class="snav-line"></div>
+    <div class="snav-item" onclick="goStep(2)">
+      <div class="snav-dot" id="sd2"><i class="ti ti-camera" style="font-size:11px" aria-hidden="true"></i></div>
+      <div class="snav-label" id="sl2">30s first<br>bite shot</div>
+    </div>
+  </div>
+
+  <!-- ══ STEP 0: Frame Builder ══ -->
+  <div class="panel active" id="p0">
+    <div class="phone" style="height:520px;">
+      <div class="sb"><span class="sb-t">9:12</span><div class="sb-i"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery" aria-hidden="true"></i></div></div>
+      <div class="timer-row">
+        <span class="timer-lbl">30s timer</span>
+        <div class="tog" id="tog0" onclick="toggleTog()"><div class="tog-k"></div></div>
+        <span class="tog-val" id="togval">ON</span>
+      </div>
+      <div class="fb-canvas">
+        <div class="fb-grid"></div>
+        <div class="frame-border">
+          <div class="fc tl"></div><div class="fc tr"></div>
+          <div class="fc bl"></div><div class="fc br"></div>
+        </div>
+        <div class="frame-title-badge"><div class="ftb-text">Paris · First Bite</div></div>
+
+        <!-- bigger stickers on the rim -->
+        <div class="sticker" style="top:38px;left:20px;font-size:30px;transform:rotate(-14deg);">🥐</div>
+        <div class="sticker" style="top:36px;right:18px;font-size:28px;transform:rotate(12deg);">🗼</div>
+        <div class="sticker" style="bottom:36px;left:18px;font-size:26px;transform:rotate(-10deg);">✨</div>
+        <div class="sticker" style="bottom:36px;right:20px;font-size:26px;transform:rotate(16deg);">🎀</div>
+        <div class="sticker" style="top:46%;left:18px;transform:translateY(-50%) rotate(-8deg);font-size:22px;">📍</div>
+        <div class="sticker" style="top:46%;right:16px;transform:translateY(-50%) rotate(10deg);font-size:22px;">💛</div>
+
+        <div class="date-stamp"><div class="ds-text">JUN 2025 · PARIS</div></div>
+
+        <!-- proper croissant — side view, crescent shape -->
+        <svg width="140" height="80" viewBox="0 0 140 80" style="position:relative;z-index:2;">
+          <!-- main crescent body -->
+          <path d="M20 58 Q10 30 35 14 Q50 6 65 12 Q50 20 48 36 Q46 50 58 60 Q38 66 20 58Z" fill="#bf7b08"/>
+          <path d="M22 56 Q13 30 36 16 Q50 9 63 14 Q49 22 47 37 Q45 50 56 60 Q37 64 22 56Z" fill="#d4900f"/>
+          <!-- right horn curving up -->
+          <path d="M118 18 Q132 8 136 20 Q132 28 122 32 Q110 28 104 20 Q110 10 118 18Z" fill="#bf7b08"/>
+          <path d="M118 20 Q130 11 133 21 Q129 28 121 31 Q111 27 106 20 Q111 12 118 20Z" fill="#d4900f"/>
+          <!-- connecting body between horns -->
+          <path d="M48 36 Q55 18 80 14 Q100 10 112 18 Q104 24 98 32 Q86 36 70 38 Q58 40 48 36Z" fill="#c8860a"/>
+          <path d="M50 35 Q57 18 80 15 Q99 11 110 19 Q103 25 97 32 Q85 35 70 37 Q58 39 50 35Z" fill="#dda020"/>
+          <!-- top highlight -->
+          <path d="M58 22 Q72 16 88 18 Q80 22 70 24 Q62 24 58 22Z" fill="rgba(255,215,100,0.45)"/>
+          <!-- sesame seeds -->
+          <ellipse cx="65" cy="28" rx="2" ry="1.2" fill="#9a6005" transform="rotate(-20 65 28)"/>
+          <ellipse cx="80" cy="24" rx="2" ry="1.2" fill="#9a6005" transform="rotate(-15 80 24)"/>
+          <ellipse cx="95" cy="26" rx="2" ry="1.2" fill="#9a6005" transform="rotate(-10 95 26)"/>
+          <ellipse cx="72" cy="35" rx="1.8" ry="1" fill="#9a6005" transform="rotate(-18 72 35)"/>
+          <!-- underside shadow -->
+          <path d="M48 36 Q58 44 70 44 Q84 44 98 38 Q86 42 70 42 Q58 42 48 36Z" fill="rgba(0,0,0,0.25)"/>
+        </svg>
+      </div>
+      <div class="fb-bar">
+        <div class="tb-tools">
+          <div class="tb-btn on"><i class="ti ti-photo" aria-hidden="true"></i></div>
+          <div class="tb-btn"><i class="ti ti-sticker" aria-hidden="true"></i></div>
+          <div class="tb-btn"><i class="ti ti-pencil" aria-hidden="true"></i></div>
+          <div class="tb-btn"><i class="ti ti-typography" aria-hidden="true"></i></div>
+        </div>
+        <button class="share-btn" onclick="goStep(1)">
+          <i class="ti ti-send" aria-hidden="true"></i>Share
+        </button>
+      </div>
+    </div>
+    <div class="desc-card">
+      <div class="dc-lbl">Step 1 · yunchai makes the frame</div>
+      <div class="dc-title">A custom frame for the moment</div>
+      <div class="dc-body">Before heading to the boulangerie, yunchai built a frame with a croissant, the trip title badge "Paris · First Bite", and cute stickers around the rim. It's already a memory before anyone even shoots.</div>
+      <div class="dc-insight">"The frame itself is the ritual. Making it together is half the fun."</div>
+      <button class="nxt" onclick="goStep(1)">Drop it in the group chat →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 1: Group Chat ══ -->
+  <div class="panel" id="p1">
+    <div class="phone light" style="height:540px;display:flex;flex-direction:column;">
+      <div class="sb light"><span class="sb-t" style="color:#1c1c1e;">9:14</span><div class="sb-i"><i class="ti ti-wifi" style="color:#1c1c1e;font-size:12px" aria-hidden="true"></i><i class="ti ti-battery" style="color:#1c1c1e;font-size:12px" aria-hidden="true"></i></div></div>
+      <div class="gc-hdr">
+        <i class="ti ti-chevron-left" style="color:#007aff;font-size:14px" aria-hidden="true"></i>
+        <div class="gc-av-group">
+          <div class="gc-av-sm" style="background:#e84393;">Y</div>
+          <div class="gc-av-sm" style="background:#5856d6;">J</div>
+          <div class="gc-av-sm" style="background:#34c759;">M</div>
+        </div>
+        <div>
+          <div class="gc-nm">Paris Girls Trip ✈️</div>
+          <div class="gc-st">yunchai, jisoo, mina</div>
+        </div>
+      </div>
+      <div class="msgs">
+        <div class="row center"><div class="system-msg">Today · 9:10 AM</div></div>
+        <div>
+          <div class="sender-nm" style="color:#5856d6;">jisoo</div>
+          <div class="row"><div class="av-xs" style="background:#5856d6;">J</div><div class="bbl them">omg we're actually in paris rn</div></div>
+        </div>
+        <div>
+          <div class="sender-nm" style="color:#34c759;">mina</div>
+          <div class="row"><div class="av-xs" style="background:#34c759;">M</div><div class="bbl them">I've been thinking about this croissant for MONTHS</div></div>
+        </div>
+        <div class="row mine"><div class="bbl me">ok wait i made us a retake frame for this</div></div>
+
+        <div class="row" style="margin-top:4px;">
+          <div class="av-xs" style="background:#e84393;">Y</div>
+          <div class="rb" onclick="goStep(2)">
+            <div class="rb-prev">
+              <div class="rb-prev-grid"></div>
+              <div class="rb-frame-preview">
+                <div class="rb-fp-border"></div>
+                <div class="rb-fp-corner tl"></div><div class="rb-fp-corner tr"></div>
+                <div class="rb-fp-corner bl"></div><div class="rb-fp-corner br"></div>
+                <div class="rb-fp-title">Paris · First Bite</div>
+                <!-- bigger stickers on bubble preview too -->
+                <div style="position:absolute;bottom:-7px;left:-9px;font-size:18px;z-index:3;">🥐</div>
+                <div style="position:absolute;top:-7px;right:-10px;font-size:16px;z-index:3;">🗼</div>
+                <div style="position:absolute;bottom:-6px;right:-8px;font-size:16px;z-index:3;">✨</div>
+                <div class="rb-fp-content">
+                  <svg width="52" height="30" viewBox="0 0 140 80">
+                    <path d="M20 58 Q10 30 35 14 Q50 6 65 12 Q50 20 48 36 Q46 50 58 60 Q38 66 20 58Z" fill="#bf7b08"/>
+                    <path d="M118 18 Q132 8 136 20 Q132 28 122 32 Q110 28 104 20 Q110 10 118 18Z" fill="#bf7b08"/>
+                    <path d="M48 36 Q55 18 80 14 Q100 10 112 18 Q104 24 98 32 Q86 36 70 38 Q58 40 48 36Z" fill="#c8860a"/>
+                    <path d="M50 35 Q57 18 80 15 Q99 11 110 19 Q103 25 97 32 Q85 35 70 37 Q58 39 50 35Z" fill="#dda020"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div class="rb-body">
+              <div class="rb-from">Retake from yunchai</div>
+              <div class="rb-title">First bite — shoot your reaction</div>
+              <div class="rb-warn"><i class="ti ti-clock" aria-hidden="true"></i><span>Opens · 30s starts</span></div>
+            </div>
+            <div class="rb-hint">Tap to shoot your reaction</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="sender-nm" style="color:#5856d6;">jisoo</div>
+          <div class="row"><div class="av-xs" style="background:#5856d6;">J</div><div class="bbl them">WAIT this is so cute</div></div>
+        </div>
+        <div>
+          <div class="sender-nm" style="color:#34c759;">mina</div>
+          <div class="row"><div class="av-xs" style="background:#34c759;">M</div><div class="bbl them">ok everyone tap at the same time lol</div></div>
+        </div>
+      </div>
+      <div class="ibar">
+        <div class="ibar-f">iMessage</div>
+        <div class="ibar-btn" style="background:#8e8e93;"><i class="ti ti-apps" style="font-size:11px;color:white;" aria-hidden="true"></i></div>
+        <div class="ibar-btn" style="background:#007aff;"><i class="ti ti-arrow-up" style="font-size:11px;color:white;" aria-hidden="true"></i></div>
+      </div>
+    </div>
+    <div class="desc-card">
+      <div class="dc-lbl">Step 2 · group chat drop</div>
+      <div class="dc-title">The frame lands in the chat</div>
+      <div class="dc-body">The Retake bubble shows the decorated frame right inside iMessage — stickers, title badge, actual croissant. "ok everyone tap at the same time" is already happening before anyone even shoots.</div>
+      <div class="dc-insight">"The bubble creates the ritual moment before anyone even shoots."</div>
+      <button class="nxt" onclick="goStep(2)">Tap the bubble — 30s starts →</button>
+    </div>
+  </div>
+
+  <!-- ══ STEP 2: Camera ══ -->
+  <div class="panel" id="p2">
+    <div class="phone" style="height:540px;position:relative;display:flex;flex-direction:column;">
+      <div class="cam-full" id="camFull">
+        <div class="cam-vf">
+          <div class="cam-vf-grid"></div>
+          <div class="cam-frame-overlay">
+            <div class="cfo-border"></div>
+            <div class="cfc tl"></div><div class="cfc tr"></div>
+            <div class="cfc bl"></div><div class="cfc br"></div>
+            <div class="cfo-title">Paris · First Bite</div>
+            <!-- bigger stickers on the camera frame overlay -->
+            <div style="position:absolute;bottom:-14px;left:-16px;font-size:32px;z-index:3;line-height:1;">🥐</div>
+            <div style="position:absolute;top:-14px;right:-18px;font-size:28px;z-index:3;line-height:1;">🗼</div>
+            <div style="position:absolute;bottom:-12px;right:-14px;font-size:26px;z-index:3;line-height:1;">✨</div>
+            <div style="position:absolute;top:-12px;left:-14px;font-size:24px;z-index:3;line-height:1;">🎀</div>
+            <div class="cfo-date">JUN 2025 · PARIS</div>
+            <!-- NO content inside — just the frame, corners, stickers, title -->
+          </div>
+        </div>
+
+        <div class="cam-top-left">
+          <div class="ctl-lbl">shooting with</div>
+          <div class="ctl-gc">
+            <div class="ctl-av" style="background:#e84393;">Y</div>
+            <div class="ctl-av" style="background:#5856d6;">J</div>
+            <div class="ctl-av" style="background:#34c759;">M</div>
+            <span class="ctl-txt">Paris Girls Trip</span>
+          </div>
+        </div>
+
+        <div class="cam-timer-wrap">
+          <div class="ctw-ring">
+            <svg viewBox="0 0 50 50">
+              <circle cx="25" cy="25" r="20" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="3.5"/>
+              <circle id="camRing" cx="25" cy="25" r="20" fill="none" stroke="#F0E84A" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="125.7" stroke-dashoffset="0" transform="rotate(-90 25 25)"/>
+            </svg>
+            <div class="ctw-n" id="camNum">30</div>
+          </div>
+          <div class="ctw-lbl">sec left</div>
+        </div>
+
+        <div class="cam-bottom-z">
+          <div class="cam-sh-lbl">tap to shoot</div>
+          <div class="shutter" onclick="shoot()"><div class="shutter-in"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="desc-card">
+      <div class="dc-lbl">Step 3 · jisoo's phone</div>
+      <div class="dc-title">The frame lives in the viewfinder</div>
+      <div class="dc-body">The moment jisoo taps, the camera opens and the full decorated frame overlays the live viewfinder — corners, stickers, title, date stamp. She shoots her first bite through it. 30 seconds. No retakes.</div>
+      <div class="dc-insight">"Three phones, three reactions, one shared frame. That gallery is the memory."</div>
+      <button class="nxt" onclick="shoot()">Shoot the first bite →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var cur=0,timerOn=true,iv=null,cnt=30,C=125.7;
+function goStep(n){
+  document.getElementById('p'+cur).classList.remove('active');
+  cur=n;
+  document.getElementById('p'+n).classList.add('active');
+  for(var i=0;i<3;i++){
+    var d=document.getElementById('sd'+i),l=document.getElementById('sl'+i);
+    d.classList.remove('active','done');l.classList.remove('active');
+    if(i<n)d.classList.add('done');
+    else if(i===n){d.classList.add('active');l.classList.add('active');}
+  }
+  if(n===2)startTimer();else stopTimer();
+}
+function toggleTog(){
+  timerOn=!timerOn;
+  document.getElementById('tog0').classList.toggle('off',!timerOn);
+  var v=document.getElementById('togval');
+  v.textContent=timerOn?'ON':'OFF';
+  v.style.color=timerOn?'#F0E84A':'rgba(255,255,255,.2)';
+}
+function startTimer(){
+  stopTimer();cnt=30;updateRing();
+  iv=setInterval(function(){cnt--;if(cnt<0){clearInterval(iv);return;}updateRing();},1000);
+}
+function stopTimer(){if(iv){clearInterval(iv);iv=null;}}
+function updateRing(){
+  var n=Math.max(0,cnt);
+  document.getElementById('camNum').textContent=n;
+  var r=document.getElementById('camRing');
+  r.style.strokeDashoffset=C*((30-n)/30);
+  var c=n<=10?'#ff453a':n<=20?'#ff9f0a':'#F0E84A';
+  r.style.stroke=c;document.getElementById('camNum').style.color=c;
+}
+function shoot(){
+  stopTimer();
+  var f=document.getElementById('camFull');
+  f.style.background='white';
+  setTimeout(function(){f.style.background='#06060e';},120);
+}
+</script>

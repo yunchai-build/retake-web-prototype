@@ -1,0 +1,353 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.root{padding:1.5rem 0;display:flex;flex-direction:column;gap:0}
+.step-nav{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:2rem}
+.snav-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:0 6px}
+.snav-dot{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--color-text-tertiary);transition:all .2s}
+.snav-dot.active{background:#1c1c1e;border-color:#1c1c1e;color:#F0E84A}
+.snav-dot.done{background:var(--color-background-secondary);border-color:var(--color-border-secondary);color:var(--color-text-secondary)}
+.snav-label{font-size:10px;color:var(--color-text-tertiary);text-align:center;max-width:72px;line-height:1.3}
+.snav-label.active{color:var(--color-text-primary)}
+.snav-line{width:32px;height:1px;background:var(--color-border-tertiary);margin-bottom:16px}
+.panel{display:none}
+.panel.active{display:flex;flex-direction:column;align-items:center;gap:20px}
+.phone{width:252px;border-radius:38px;border:1.5px solid #2a2a2a;overflow:hidden;flex-shrink:0;background:#0e0e0e;display:flex;flex-direction:column}
+.phone.light{background:#f2f2f7;border-color:#d1d1d6}
+.sb{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex-shrink:0}
+.sb-t{font-size:12px;font-weight:500;color:white}
+.phone.light .sb-t{color:#1c1c1e}
+.sb-i{display:flex;gap:4px}
+.sb-i i{color:white;font-size:12px}
+.phone.light .sb-i i{color:#1c1c1e}
+.fb-canvas{flex:1;background:#0a0a0a;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:340px}
+.fb-grid{position:absolute;inset:0;opacity:.05;background-image:linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px);background-size:20px 20px}
+.frame-border{position:absolute;inset:14px;border:2px solid rgba(240,232,74,.55);border-radius:12px;pointer-events:none}
+.fc{position:absolute;width:20px;height:20px;border-color:#F0E84A;border-style:solid}
+.fc.tl{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.fc.tr{top:-2px;right:-2px;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+.fc.bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+.fc.br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+.sticker{position:absolute;line-height:1;pointer-events:none;z-index:4}
+.frame-title-badge{position:absolute;top:22px;left:50%;transform:translateX(-50%);background:#F0E84A;border-radius:20px;padding:4px 14px;z-index:4;white-space:nowrap}
+.ftb-text{font-size:10px;font-weight:700;color:#0e0e0e;letter-spacing:.06em}
+.fb-bar{padding:10px 14px 14px;display:flex;align-items:center;gap:8px;background:#111;flex-shrink:0;border-top:.5px solid #222}
+.tb-tools{display:flex;gap:6px;flex:1}
+.tb-btn{width:32px;height:32px;background:rgba(255,255,255,.06);border:none;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tb-btn i{font-size:14px;color:rgba(255,255,255,.45)}
+.tb-btn.on{background:rgba(255,255,255,.14)}
+.tb-btn.on i{color:white}
+.share-btn{background:#F0E84A;color:#0e0e0e;border:none;border-radius:11px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.gc-hdr{padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:.5px solid #e5e5ea;background:rgba(242,242,247,.96);flex-shrink:0}
+.gc-nm{font-size:12px;font-weight:600;color:#1c1c1e}
+.gc-st{font-size:9px;color:#8e8e93}
+.msgs{flex:1;padding:8px 10px;display:flex;flex-direction:column;gap:6px;overflow:hidden;background:#f2f2f7}
+.row{display:flex;align-items:flex-end;gap:4px}
+.row.mine{flex-direction:row-reverse}
+.row.center{justify-content:center}
+.av-xs{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:white;flex-shrink:0}
+.bbl{max-width:155px;border-radius:14px;padding:6px 10px;font-size:11px;line-height:1.45}
+.bbl.them{background:#e5e5ea;color:#1c1c1e}
+.bbl.me{background:#007aff;color:white}
+.sender-nm{font-size:9px;color:#8e8e93;margin-left:26px;margin-bottom:1px}
+.system-msg{font-size:9px;color:#8e8e93;background:rgba(142,142,147,.12);border-radius:8px;padding:3px 10px}
+.rb{width:200px;background:#1c1c1e;border-radius:16px;overflow:hidden;border:1px solid #3a3a3c;cursor:pointer;transition:transform .1s}
+.rb:active{transform:scale(.97)}
+.rb-prev{width:100%;height:110px;background:#0a0a0a;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.rb-prev-grid{position:absolute;inset:0;opacity:.04;background-image:linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px);background-size:16px 16px}
+.rb-frame-preview{position:relative;width:90px;height:80px;z-index:2}
+.rb-fp-border{position:absolute;inset:0;border:1.5px solid rgba(240,232,74,.5);border-radius:8px}
+.rb-fp-corner{position:absolute;width:10px;height:10px;border-color:#F0E84A;border-style:solid}
+.rb-fp-corner.tl{top:-1px;left:-1px;border-width:2px 0 0 2px;border-radius:2px 0 0 0}
+.rb-fp-corner.tr{top:-1px;right:-1px;border-width:2px 2px 0 0;border-radius:0 2px 0 0}
+.rb-fp-corner.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px;border-radius:0 0 0 2px}
+.rb-fp-corner.br{bottom:-1px;right:-1px;border-width:0 2px 2px 0;border-radius:0 0 2px 0}
+.rb-fp-title{position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:#F0E84A;border-radius:4px;padding:1px 6px;white-space:nowrap;font-size:7px;font-weight:700;color:#0e0e0e;z-index:3}
+.rb-fp-content{position:absolute;inset:6px;display:flex;align-items:center;justify-content:center}
+.rb-body{padding:8px 10px}
+.rb-from{font-size:8px;color:#636366;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.rb-title{font-size:11px;font-weight:700;color:white;margin-bottom:4px}
+.rb-tag{display:flex;align-items:center;gap:3px;background:rgba(240,232,74,.1);border-radius:5px;padding:3px 7px;width:fit-content}
+.rb-tag i{font-size:9px;color:#F0E84A}
+.rb-tag span{font-size:9px;color:#F0E84A}
+.rb-hint{font-size:9px;color:#48484a;text-align:center;padding:5px 10px 8px;border-top:.5px solid #2c2c2e}
+.ibar{padding:5px 10px 12px;display:flex;align-items:center;gap:5px;background:rgba(242,242,247,.95);border-top:.5px solid #e5e5ea;flex-shrink:0}
+.ibar-f{flex:1;background:white;border:.5px solid #d1d1d6;border-radius:14px;padding:5px 9px;font-size:11px;color:#8e8e93}
+.ibar-btn{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cam-full{position:absolute;inset:0;background:#06060e;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:28px}
+.cam-vf{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.cam-vf-grid{position:absolute;inset:0;opacity:.04;background-image:linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px);background-size:22px 22px}
+.cam-frame-overlay{position:relative;width:190px;height:190px}
+.cfo-border{position:absolute;inset:0;border:2px solid rgba(240,232,74,.4);border-radius:10px}
+.cfc{position:absolute;width:18px;height:18px;border-color:#F0E84A;border-style:solid}
+.cfc.tl{top:-1px;left:-1px;border-width:2.5px 0 0 2.5px;border-radius:3px 0 0 0}
+.cfc.tr{top:-1px;right:-1px;border-width:2.5px 2.5px 0 0;border-radius:0 3px 0 0}
+.cfc.bl{bottom:-1px;left:-1px;border-width:0 0 2.5px 2.5px;border-radius:0 0 0 3px}
+.cfc.br{bottom:-1px;right:-1px;border-width:0 2.5px 2.5px 0;border-radius:0 0 3px 0}
+.cfo-title{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#F0E84A;border-radius:10px;padding:2px 10px;white-space:nowrap;font-size:8px;font-weight:700;color:#0e0e0e;z-index:3}
+.cam-top-left{position:absolute;top:14px;left:14px;z-index:5}
+.ctl-lbl{font-size:8px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em}
+.ctl-gc{display:flex;align-items:center;gap:3px;margin-top:3px}
+.ctl-av{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:600;color:white;border:1px solid rgba(255,255,255,.2)}
+.ctl-txt{font-size:10px;color:rgba(255,255,255,.6);margin-left:5px;font-weight:500}
+.cam-timer-wrap{position:absolute;top:14px;right:14px;z-index:5;display:flex;flex-direction:column;align-items:center;gap:2px}
+.ctw-ring{position:relative;width:50px;height:50px}
+.ctw-ring svg{width:50px;height:50px}
+.ctw-n{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:15px;font-weight:700;color:#F0E84A}
+.ctw-lbl{font-size:8px;color:rgba(255,255,255,.28);letter-spacing:.06em}
+.cam-bottom-z{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:8px}
+.cam-sh-lbl{font-size:9px;color:rgba(255,255,255,.28);letter-spacing:.06em}
+.shutter{width:62px;height:62px;border-radius:50%;border:3px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.shutter-in{width:50px;height:50px;border-radius:50%;background:white;transition:transform .1s,background .12s}
+.shutter:active .shutter-in{transform:scale(.88);background:#F0E84A}
+.desc-card{width:252px;background:var(--color-background-primary);border:.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px}
+.dc-lbl{font-size:10px;color:var(--color-text-tertiary);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.dc-title{font-size:14px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.dc-body{font-size:12px;color:var(--color-text-secondary);line-height:1.65}
+.dc-insight{margin-top:10px;border-left:2px solid #F0E84A;padding-left:10px;font-size:11px;color:var(--color-text-tertiary);font-style:italic;line-height:1.5}
+.nxt{width:100%;margin-top:12px;background:#1c1c1e;color:#F0E84A;border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:500;cursor:pointer;transition:opacity .12s}
+.nxt:active{opacity:.8}
+.typing{display:flex;align-items:center;gap:3px;padding:6px 10px;background:#e5e5ea;border-radius:14px;width:fit-content}
+.typing span{width:5px;height:5px;border-radius:50%;background:#8e8e93;animation:bop 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes bop{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+</style>
+
+<h2 class="sr-only">Retake family use case — daughter sends mom a look what I made frame, mom reacts in the hole.</h2>
+
+<div class="root">
+  <div class="step-nav">
+    <div class="snav-item" onclick="goStep(0)">
+      <div class="snav-dot active" id="sd0"><i class="ti ti-frame" style="font-size:11px" aria-hidden="true"></i></div>
+      <div class="snav-label active" id="sl0">make the<br>frame</div>
+    </div>
+    <div class="snav-line"></div>
+    <div class="snav-item" onclick="goStep(1)">
+      <div class="snav-dot" id="sd1"><i class="ti ti-messages" style="font-size:11px" aria-hidden="true"></i></div>
+      <div class="snav-label" id="sl1">drop in<br>family chat</div>
+    </div>
+    <div class="snav-line"></div>
+    <div class="snav-item" onclick="goStep(2)">
+      <div class="snav-dot" id="sd2"><i class="ti ti-camera" style="font-size:11px" aria-hidden="true"></i></div>
+      <div class="snav-label" id="sl2">mom reacts<br>in the hole</div>
+    </div>
+  </div>
+
+  <!-- STEP 0: Frame editor — daughter making it -->
+  <div class="panel active" id="p0">
+    <div class="phone" style="height:520px;">
+      <div class="sb"><span class="sb-t">9:41</span><div class="sb-i"><i class="ti ti-wifi" aria-hidden="true"></i><i class="ti ti-battery" aria-hidden="true"></i></div></div>
+      <div class="fb-canvas">
+        <div class="fb-grid"></div>
+        <div class="frame-border">
+          <div class="fc tl"></div><div class="fc tr"></div>
+          <div class="fc bl"></div><div class="fc br"></div>
+        </div>
+        <div class="frame-title-badge"><div class="ftb-text">look what i made!!</div></div>
+
+        <div class="sticker" style="top:40px;left:22px;font-size:32px;transform:rotate(-14deg);">🍳</div>
+        <div class="sticker" style="top:38px;right:20px;font-size:30px;transform:rotate(12deg);">✨</div>
+        <div class="sticker" style="bottom:38px;left:20px;font-size:28px;transform:rotate(-10deg);">🥘</div>
+        <div class="sticker" style="bottom:36px;right:22px;font-size:28px;transform:rotate(16deg);">💛</div>
+        <div class="sticker" style="top:46%;left:20px;transform:translateY(-50%) rotate(-8deg);font-size:22px;">🌿</div>
+        <div class="sticker" style="top:46%;right:18px;transform:translateY(-50%) rotate(10deg);font-size:22px;">🫶</div>
+
+        <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div style="width:110px;height:110px;border-radius:50%;border:2px dashed rgba(240,232,74,.3);display:flex;align-items:center;justify-content:center;position:relative;">
+            <div style="position:absolute;inset:6px;border-radius:50%;border:2px solid rgba(240,232,74,.55);display:flex;align-items:center;justify-content:center;">
+              <i class="ti ti-user" style="font-size:30px;color:rgba(255,255,255,.08);" aria-hidden="true"></i>
+            </div>
+            <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#F0E84A;border-radius:10px;padding:2px 10px;white-space:nowrap;z-index:2;">
+              <span style="font-size:8px;font-weight:700;color:#0e0e0e;">mom's reaction here</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="fb-bar">
+        <div class="tb-tools">
+          <div class="tb-btn on"><i class="ti ti-photo" aria-hidden="true"></i></div>
+          <div class="tb-btn"><i class="ti ti-sticker" aria-hidden="true"></i></div>
+          <div class="tb-btn"><i class="ti ti-pencil" aria-hidden="true"></i></div>
+          <div class="tb-btn"><i class="ti ti-typography" aria-hidden="true"></i></div>
+        </div>
+        <button class="share-btn" onclick="goStep(1)">
+          <i class="ti ti-send" aria-hidden="true"></i>send to Mom
+        </button>
+      </div>
+    </div>
+    <div class="desc-card">
+      <div class="dc-lbl">Step 1 · daughter makes the frame</div>
+      <div class="dc-title">look what i made!!</div>
+      <div class="dc-body">She cooked something, she's proud, she wants mom to see it and react right now. Builds the frame, shoots the food through it, sends it. Mom gets the hole — her reaction goes right in.</div>
+      <div class="dc-insight">"The double exclamation mark is doing everything."</div>
+      <button class="nxt" onclick="goStep(1)">drop it in the chat →</button>
+    </div>
+  </div>
+
+  <!-- STEP 1: Chat — daughter sends, mom receives -->
+  <div class="panel" id="p1">
+    <div class="phone light" style="height:540px;display:flex;flex-direction:column;">
+      <div class="sb"><span class="sb-t" style="color:#1c1c1e;">9:44</span><div class="sb-i"><i class="ti ti-wifi" style="color:#1c1c1e;" aria-hidden="true"></i><i class="ti ti-battery" style="color:#1c1c1e;" aria-hidden="true"></i></div></div>
+      <div class="gc-hdr">
+        <i class="ti ti-chevron-left" style="color:#007aff;font-size:14px" aria-hidden="true"></i>
+        <div style="width:32px;height:32px;border-radius:50%;background:#e84393;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;margin-right:2px;flex-shrink:0;">M</div>
+        <div>
+          <div class="gc-nm">Mom</div>
+          <div class="gc-st">active now</div>
+        </div>
+        <i class="ti ti-video" style="color:#007aff;font-size:16px;margin-left:auto;" aria-hidden="true"></i>
+      </div>
+      <div class="msgs">
+        <div class="row center"><div class="system-msg">Today · 9:40 AM</div></div>
+
+        <div class="row mine"><div class="bbl me">mom i made something today</div></div>
+        <div class="row mine"><div class="bbl me">tell me what u think hehe</div></div>
+
+        <div class="row mine" style="margin-top:4px;">
+          <div class="rb" onclick="goStep(2)">
+            <div class="rb-prev">
+              <div class="rb-prev-grid"></div>
+              <div class="rb-frame-preview">
+                <div class="rb-fp-border"></div>
+                <div class="rb-fp-corner tl"></div><div class="rb-fp-corner tr"></div>
+                <div class="rb-fp-corner bl"></div><div class="rb-fp-corner br"></div>
+                <div class="rb-fp-title">look what i made!!</div>
+                <div style="position:absolute;bottom:-7px;left:-9px;font-size:18px;z-index:3;">🍳</div>
+                <div style="position:absolute;top:-7px;right:-9px;font-size:16px;z-index:3;">✨</div>
+                <div style="position:absolute;bottom:-6px;right:-8px;font-size:16px;z-index:3;">🥘</div>
+                <div class="rb-fp-content">
+                  <div style="width:32px;height:32px;border-radius:50%;border:1.5px dashed rgba(240,232,74,.5);display:flex;align-items:center;justify-content:center;">
+                    <i class="ti ti-user" style="font-size:12px;color:rgba(240,232,74,.4);" aria-hidden="true"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="rb-body">
+              <div class="rb-from">Retake from Jamie</div>
+              <div class="rb-title">what do u think, mom??</div>
+              <div class="rb-tag"><i class="ti ti-circle" aria-hidden="true"></i><span>ur reaction goes in the hole</span></div>
+            </div>
+            <div class="rb-hint">tap to watch + react</div>
+          </div>
+        </div>
+
+        <div style="margin-top:4px;">
+          <div class="row"><div class="av-xs" style="background:#e84393;">M</div><div class="bbl them">omg baby this looks so good</div></div>
+        </div>
+        <div>
+          <div class="row" style="margin-top:3px;"><div style="width:20px;flex-shrink:0;"></div><div class="bbl them">어떻게 하는 거야 ㅋㅋ</div></div>
+        </div>
+
+        <div class="row" style="margin-top:3px;margin-left:26px;">
+          <div class="typing"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+      <div class="ibar">
+        <i class="ti ti-plus" style="color:#007aff;font-size:18px;flex-shrink:0;" aria-hidden="true"></i>
+        <div class="ibar-f">iMessage</div>
+        <div class="ibar-btn" style="background:#007aff;"><i class="ti ti-arrow-up" style="font-size:11px;color:white;" aria-hidden="true"></i></div>
+      </div>
+    </div>
+    <div class="desc-card">
+      <div class="dc-lbl">Step 2 · the chat</div>
+      <div class="dc-title">"what do u think, mom??"</div>
+      <div class="dc-body">Daughter sends first — "i made something, tell me what u think hehe." The Retake bubble lands. Mom goes "omg baby this looks so good" then switches to Korean for "어떻게 하는 거야 ㅋㅋ". That's the whole relationship right there.</div>
+      <div class="dc-insight">"Mom praising in English, panicking in Korean. Accurate."</div>
+      <button class="nxt" onclick="goStep(2)">mom figures it out →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Mom's reaction camera -->
+  <div class="panel" id="p2">
+    <div class="phone" style="height:540px;position:relative;display:flex;flex-direction:column;">
+      <div class="cam-full" id="camFull">
+        <div class="cam-vf">
+          <div class="cam-vf-grid"></div>
+          <div class="cam-frame-overlay">
+            <div class="cfo-border"></div>
+            <div class="cfc tl"></div><div class="cfc tr"></div>
+            <div class="cfc bl"></div><div class="cfc br"></div>
+            <div class="cfo-title">look what i made!!</div>
+            <div style="position:absolute;bottom:-14px;left:-16px;font-size:32px;z-index:3;line-height:1;">🍳</div>
+            <div style="position:absolute;top:-14px;right:-18px;font-size:28px;z-index:3;line-height:1;">✨</div>
+            <div style="position:absolute;bottom:-12px;right:-14px;font-size:26px;z-index:3;line-height:1;">🥘</div>
+            <div style="position:absolute;top:-12px;left:-14px;font-size:24px;z-index:3;line-height:1;">🫶</div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+              <div style="width:72px;height:72px;border-radius:50%;border:2px dashed rgba(240,232,74,.35);display:flex;align-items:center;justify-content:center;">
+                <div style="position:absolute;inset:6px;border-radius:50%;border:1.5px solid rgba(240,232,74,.55);"></div>
+                <i class="ti ti-user" style="font-size:22px;color:rgba(255,255,255,.1);position:relative;z-index:1;" aria-hidden="true"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cam-top-left">
+          <div class="ctl-lbl">from</div>
+          <div class="ctl-gc">
+            <div class="ctl-av" style="background:#34c759;">J</div>
+            <span class="ctl-txt">Jamie</span>
+          </div>
+        </div>
+
+        <div class="cam-timer-wrap">
+          <div class="ctw-ring">
+            <svg viewBox="0 0 50 50">
+              <circle cx="25" cy="25" r="20" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="3.5"/>
+              <circle id="camRing" cx="25" cy="25" r="20" fill="none" stroke="#F0E84A" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="125.7" stroke-dashoffset="0" transform="rotate(-90 25 25)"/>
+            </svg>
+            <div class="ctw-n" id="camNum">15</div>
+          </div>
+          <div class="ctw-lbl">sec left</div>
+        </div>
+
+        <div class="cam-bottom-z">
+          <div class="cam-sh-lbl">tap to react, Mom</div>
+          <div class="shutter" onclick="shoot()"><div class="shutter-in"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="desc-card">
+      <div class="dc-lbl">Step 3 · mom's camera</div>
+      <div class="dc-title">mom's face in the hole, Jamie's food behind her</div>
+      <div class="dc-body">Mom opens the camera and sees Jamie's dish playing through the frame. Her reaction goes right into the circle. One clip — the food, her face, the whole moment. Jamie gets to see mom's real-time face when she sees it.</div>
+      <div class="dc-insight">"This is the reaction video mom would've sent anyway — Retake just makes it one thing."</div>
+      <button class="nxt" onclick="shoot()">mom reacts →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var cur=0,iv=null,cnt=15,C=125.7;
+function goStep(n){
+  document.getElementById('p'+cur).classList.remove('active');
+  cur=n;
+  document.getElementById('p'+n).classList.add('active');
+  for(var i=0;i<3;i++){
+    var d=document.getElementById('sd'+i),l=document.getElementById('sl'+i);
+    d.classList.remove('active','done');l.classList.remove('active');
+    if(i<n)d.classList.add('done');
+    else if(i===n){d.classList.add('active');l.classList.add('active');}
+  }
+  if(n===2)startTimer();else stopTimer();
+}
+function startTimer(){
+  stopTimer();cnt=15;updateRing();
+  iv=setInterval(function(){cnt--;if(cnt<0){clearInterval(iv);return;}updateRing();},1000);
+}
+function stopTimer(){if(iv){clearInterval(iv);iv=null;}}
+function updateRing(){
+  var n=Math.max(0,cnt);
+  document.getElementById('camNum').textContent=n;
+  var r=document.getElementById('camRing');
+  r.style.strokeDashoffset=C*((15-n)/15);
+  var c=n<=4?'#ff453a':n<=8?'#ff9f0a':'#F0E84A';
+  r.style.stroke=c;document.getElementById('camNum').style.color=c;
+}
+function shoot(){
+  stopTimer();
+  var f=document.getElementById('camFull');
+  f.style.background='white';
+  setTimeout(function(){f.style.background='#06060e';},120);
+}
+</script>
