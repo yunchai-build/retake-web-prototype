@@ -1,25 +1,32 @@
 import React from 'react';
-import GlassIconButton from '../../../components/ui/GlassIconButton.jsx';
-import GlassSurface from '../../../components/ui/GlassSurface.jsx';
+import RetakeCameraBottomBar from '../../editor/components/RetakeCameraBottomBar.jsx';
 
 export default function BottomBar({
   visible,
   out,
   onGalleryClick,
   onProceed,
+  showGallery = true,
   showProceed = true,
 }) {
   return (
-    <GlassSurface id="s6BottomBar" className={`s6-bottom-bar${visible ? ' visible' : ''}${out ? ' out' : ''}`}>
-      <GlassIconButton className="s6-circle-btn" id="btnGallery" icon="photo" label="Change photo"
-        onClick={onGalleryClick} />
-
-      {showProceed && (
-        <GlassIconButton className="s6-send-btn" id="btnProceed" icon="arrowRight" label="Preview" shape="pill"
-          onClick={onProceed}>
-          <span className="s6-send-label">Preview</span>
-        </GlassIconButton>
-      )}
-    </GlassSurface>
+    <RetakeCameraBottomBar
+      visible={visible}
+      out={out}
+      className="retake-camera-bottom-bar--split-actions s6-bottom-bar"
+      glassControls
+      hideTitle
+      review={false}
+      leftIcon="photo"
+      leftLabel="Change photo"
+      onLeft={onGalleryClick}
+      showLeft={showGallery}
+      showSecondary={false}
+      showPrimary={showProceed}
+      primaryIcon={null}
+      primaryLabel="Next"
+      primaryText="Next"
+      onPrimary={onProceed}
+    />
   );
 }

@@ -2308,6 +2308,13 @@ export default function InviterPage() {
             onRedo={mainRedo}
           />
 
+          <SolidIconButton
+            className={`s6-overflow-btn${toolsVisible ? ' visible' : ''}${toolsOut ? ' out' : ''}`}
+            icon="moreHorizontal"
+            label="More editor tools"
+            onClick={handleToggleTools}
+          />
+
           <VerticalToolbar
             visible={toolsVisible}
             out={toolsOut}
@@ -2320,6 +2327,7 @@ export default function InviterPage() {
             onToolDoodle={handleToolDoodle}
             onToolMagicPen={handleToolMagicPen}
             onToolDownload={handleToolDownload}
+            onPhoto={handleBgGallery}
             onToggle={handleToggleTools}
             onInteraction={handleToolbarInteraction}
             onToolMouseEnter={handleToolMouseEnter}
@@ -2331,6 +2339,7 @@ export default function InviterPage() {
             out={bottomBarOut}
             onGalleryClick={handleBgGallery}
             onProceed={handleProceedToStep3}
+            showGallery={false}
           />
         </>
       )}
@@ -2368,6 +2377,9 @@ export default function InviterPage() {
           leftLabel="Back"
           onLeft={handleStep3Back}
           showSecondary={false}
+          primaryIcon={null}
+          primaryAvatar={{ icon: 'share' }}
+          primaryVariant="avatar-chip"
           primaryLabel="Share"
           primaryText="Share"
           onPrimary={openSavedFrames}

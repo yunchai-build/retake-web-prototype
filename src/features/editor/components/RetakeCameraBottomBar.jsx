@@ -2,6 +2,7 @@ import React from 'react';
 import GlassIconButton from '../../../components/ui/GlassIconButton.jsx';
 import GlassSurface from '../../../components/ui/GlassSurface.jsx';
 import SolidIconButton from '../../../components/ui/SolidIconButton.jsx';
+import ToolIcon from '../../../components/icons/ToolIcon.jsx';
 
 export default function RetakeCameraBottomBar({
   visible,
@@ -20,9 +21,12 @@ export default function RetakeCameraBottomBar({
   primaryLabel,
   primaryText,
   primaryAvatar,
+  primaryVariant = 'default',
   primaryBusy = false,
   onPrimary,
+  showLeft = true,
   showSecondary = true,
+  showPrimary = true,
   hideTitle = false,
   glassControls = false,
   className = '',
@@ -32,10 +36,12 @@ export default function RetakeCameraBottomBar({
   const ActionButton = glassControls ? GlassIconButton : SolidIconButton;
   const hasPrimaryAvatar = Boolean(primaryAvatar);
   const primaryAvatarSrc = primaryAvatar?.src;
+  const primaryAvatarIcon = primaryAvatar?.icon;
   const primaryAvatarText = primaryAvatar?.avatarText || primaryAvatar?.text;
   const primaryAvatarBadgeText = primaryAvatar?.badgeText;
   const classes = [
     'retake-camera-bottom-bar',
+    primaryVariant && primaryVariant !== 'default' ? `retake-camera-bottom-bar--${primaryVariant}` : '',
     className,
     'visible',
     out ? ' out' : '',
@@ -43,15 +49,17 @@ export default function RetakeCameraBottomBar({
 
   return (
     <GlassSurface className={classes}>
-      <ActionButton
-        className={review ? 'retake-camera-retake-btn' : 'retake-camera-circle-btn'}
-        icon={leftIcon}
-        label={leftLabel}
-        shape={review ? 'pill' : 'circle'}
-        onClick={onLeft}
-      >
-        {review ? <span className="retake-camera-retake-label">Retake</span> : null}
-      </ActionButton>
+      {showLeft && (
+        <ActionButton
+          className={review ? 'retake-camera-retake-btn' : 'retake-camera-circle-btn'}
+          icon={leftIcon}
+          label={leftLabel}
+          shape={review ? 'pill' : 'circle'}
+          onClick={onLeft}
+        >
+          {review ? <span className="retake-camera-retake-label">Retake</span> : null}
+        </ActionButton>
+      )}
       {!hideTitle && (
         <button
           type="button"
@@ -62,45 +70,51 @@ export default function RetakeCameraBottomBar({
           <span className="retake-camera-title-text">{title}</span>
         </button>
       )}
-      <div className="retake-camera-bottom-actions">
-        {showSecondary && (
-          <ActionButton
-            className="retake-camera-circle-btn"
-            icon={secondaryIcon}
-            label={secondaryLabel}
-            onClick={onSecondary}
-          />
-        )}
-        <ActionButton
-          className={`retake-camera-primary-btn${primaryAvatar ? ' has-primary-avatar' : ''}${primaryBusy ? ' is-primary-busy' : ''}`}
-          icon={primaryIcon}
-          label={primaryLabel}
-          onClick={onPrimary}
-          disabled={primaryBusy}
-          aria-busy={primaryBusy ? 'true' : undefined}
-          shape={(primaryText || hasPrimaryAvatar) ? 'pill' : 'circle'}
-        >
-          {hasPrimaryAvatar ? (
-            <span className="retake-camera-primary-avatar-set" aria-hidden="true">
-              {(primaryAvatarSrc || primaryAvatar?.showPlaceholder) ? (
-                <span className={`retake-camera-primary-avatar retake-camera-primary-avatar--${primaryAvatarSrc ? 'image' : 'placeholder'}`}>
-                  {primaryAvatarSrc ? (
-                    <img src={primaryAvatarSrc} alt="" draggable="false" />
-                  ) : (
-                    <span>{primaryAvatarText}</span>
-                  )}
+      {(showSecondary || showPrimary) && (
+        <div className="retake-camera-bottom-actions">
+          {showSecondary && (
+            <ActionButton
+              className="retake-camera-circle-btn"
+              icon={secondaryIcon}
+              label={secondaryLabel}
+              onClick={onSecondary}
+            />
+          )}
+          {showPrimary && (
+            <ActionButton
+              className={`retake-camera-primary-btn${primaryAvatar ? ' has-primary-avatar' : ''}${primaryBusy ? ' is-primary-busy' : ''}`}
+              icon={primaryIcon}
+              label={primaryLabel}
+              onClick={onPrimary}
+              disabled={primaryBusy}
+              aria-busy={primaryBusy ? 'true' : undefined}
+              shape={(primaryText || hasPrimaryAvatar) ? 'pill' : 'circle'}
+            >
+              {hasPrimaryAvatar ? (
+                <span className="retake-camera-primary-avatar-set" aria-hidden="true">
+                  {(primaryAvatarSrc || primaryAvatarIcon || primaryAvatar?.showPlaceholder) ? (
+                    <span className={`retake-camera-primary-avatar retake-camera-primary-avatar--${primaryAvatarSrc ? 'image' : primaryAvatarIcon ? 'icon' : 'placeholder'}`}>
+                      {primaryAvatarSrc ? (
+                        <img src={primaryAvatarSrc} alt="" draggable="false" />
+                      ) : primaryAvatarIcon ? (
+                        <ToolIcon type={primaryAvatarIcon} />
+                      ) : (
+                        <span>{primaryAvatarText}</span>
+                      )}
+                    </span>
+                  ) : null}
+                  {primaryAvatarBadgeText ? (
+                    <span className="retake-camera-primary-avatar retake-camera-primary-avatar--badge">
+                      <span>{primaryAvatarBadgeText}</span>
+                    </span>
+                  ) : null}
                 </span>
               ) : null}
-              {primaryAvatarBadgeText ? (
-                <span className="retake-camera-primary-avatar retake-camera-primary-avatar--badge">
-                  <span>{primaryAvatarBadgeText}</span>
-                </span>
-              ) : null}
-            </span>
-          ) : null}
-          {primaryText ? <span className="retake-camera-primary-label">{primaryText}</span> : null}
-        </ActionButton>
-      </div>
+              {primaryText ? <span className="retake-camera-primary-label">{primaryText}</span> : null}
+            </ActionButton>
+          )}
+        </div>
+      )}
     </GlassSurface>
   );
 }

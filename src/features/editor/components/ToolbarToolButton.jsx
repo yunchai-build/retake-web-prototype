@@ -3,6 +3,7 @@ import SolidIconButton from '../../../components/ui/SolidIconButton.jsx';
 
 export default function ToolbarToolButton({
   id,
+  toolId,
   icon,
   label,
   active = false,
@@ -13,6 +14,7 @@ export default function ToolbarToolButton({
 }) {
   const className = [
     's6-tool-btn',
+    toolId ? `s6-tool-btn--${toolId}` : '',
   ].filter(Boolean).join(' ');
 
   return (

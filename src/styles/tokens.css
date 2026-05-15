@@ -11,6 +11,15 @@
   --color-danger: #FF3B30;
   --color-white: #FFFFFF;
 
+  /* Light editor reference direction */
+  --light-shell-bg: #FFFFFF;
+  --light-canvas-bg: #F4F4F2;
+  --light-dot-color: rgba(var(--color-ink-rgb), 0.16);
+  --light-control-bg: rgba(var(--color-ink-rgb), 0.07);
+  --light-control-active: rgba(var(--color-ink-rgb), 0.13);
+  --light-control-muted: rgba(var(--color-ink-rgb), 0.34);
+  --light-control-shadow: 0 8px 22px rgba(var(--color-ink-rgb), 0.08);
+
   /* Legacy aliases used while older CSS is migrated. */
   --system-yellow: var(--color-brand-yellow);
   --system-yellow-active: var(--color-brand-yellow-active);

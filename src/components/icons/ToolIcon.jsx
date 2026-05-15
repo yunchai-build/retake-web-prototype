@@ -187,6 +187,23 @@ export default function ToolIcon({ type }) {
         </svg>
       );
       break;
+    case 'plus':
+      icon = (
+        <svg {...iconProps}>
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </svg>
+      );
+      break;
+    case 'moreHorizontal':
+      icon = (
+        <svg {...iconProps}>
+          <circle cx="5.5" cy="12" r="1.6" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+          <circle cx="18.5" cy="12" r="1.6" fill="currentColor" stroke="none" />
+        </svg>
+      );
+      break;
     case 'chevron':
       icon = (
         <svg {...iconProps} viewBox="0 0 24 24">

@@ -1,6 +1,6 @@
 /* ── Inviter-specific layout (scoped via JS class to avoid CSS bundle conflicts) ── */
 body.inviter-mode {
-  background: #000;
+  background: var(--light-shell-bg);
   margin: 0; padding: 0;
   width: 100vw;
   height: 100dvh;
@@ -21,39 +21,48 @@ body.inviter-mode {
  * ─────────────────────────────────────────────────────────── */
 body.inviter-mode .screen {
   --canvas-chrome-inset: 18px;
+  --light-shell-pad: max(var(--space-8), env(safe-area-inset-left, 0px));
+  --light-canvas-top: calc(env(safe-area-inset-top, 0px) + 132px);
+  --light-canvas-bottom: calc(env(safe-area-inset-bottom, 0px) + 94px);
+  --light-canvas-max-height: calc(100dvh - var(--light-canvas-top) - var(--light-canvas-bottom));
 
   position: fixed;   /* fixed = always pinned to viewport; no scroll drift on iOS */
-  top: 50%;
-  left: 0;
+  inset: 0;
   width: 100vw;
-  height: calc(100vw * 16 / 9);
-  transform: translateY(-50%);
+  height: 100dvh;
+  transform: none;
 
-  background: transparent; /* checkerboard behind shows through */
+  background: var(--light-shell-bg);
 
   /* overflow: hidden — keeps children clipped to the rounded rect.
      (overflow: clip breaks backdrop-filter on iOS Safari / WebKit) */
   overflow: hidden;
 
-  border-radius: 20px;
+  border-radius: 0;
   z-index: var(--z-live-media);
-
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.07),
-    0 24px 80px rgba(0,0,0,0.55);
+  box-shadow: none;
 }
 
 
 /* ── Frame container ── */
 body.inviter-mode #frameContainer {
   position: absolute;
-  top: 0; right: 0; bottom: 0; left: 0;
-  width: auto;
+  top: var(--light-canvas-top);
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  width: min(
+    calc(100vw - (var(--light-shell-pad) * 2)),
+    calc(var(--light-canvas-max-height) * 9 / 16)
+  );
   height: auto;
-  border-radius: 20px;
+  aspect-ratio: 9 / 16;
+  transform: translateX(-50%);
+  border-radius: 34px;
   overflow: hidden;
   z-index: var(--z-live-media);
   box-shadow: none;
+  background: var(--light-canvas-bg);
 }
 
 body.inviter-mode #frameContainer.s2-gallery-adjusting {
@@ -76,15 +85,11 @@ body.inviter-mode #s2GalleryCanvas {
 #checkerBg {
   position: absolute; left: 0; top: 0;
   width: 100%; height: 100%;
-  border-radius: 20px;
-  background-color: #e8e8e8;
-  background-image:
-    linear-gradient(45deg, #d0d0d0 25%, transparent 25%),
-    linear-gradient(-45deg, #d0d0d0 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #d0d0d0 75%),
-    linear-gradient(-45deg, transparent 75%, #d0d0d0 75%);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  border-radius: inherit;
+  background-color: var(--light-canvas-bg);
+  background-image: radial-gradient(circle, var(--light-dot-color) 0 2px, transparent 2.4px);
+  background-size: 28px 28px;
+  background-position: 12px 12px;
   z-index: var(--z-frame-bg);
 }
 
@@ -335,6 +340,15 @@ body.inviter-mode [data-flow-state^="step3"] .placed-text {
 }
 #frameScrim.visible { opacity: 1; }
 
+body.inviter-mode #frameContainer::after {
+  opacity: 0;
+}
+
+body.inviter-mode #frameScrim,
+body.inviter-mode #frameScrim.visible {
+  opacity: 0;
+}
+
 
 /* ════════════════════════════════════════════
    DEFAULT EDITOR UI  (visible when no tool active)
@@ -518,41 +532,6 @@ body.inviter-mode .s6-tool-btn.btn-hidden {
   transition: opacity 0.1s ease, transform 0.1s ease;
 }
 .edit-name-save:active { opacity: 0.8; transform: scale(0.98); }
-
-/* Proceed action — same glass control language as the floating chrome */
-body.inviter-mode .s6-send-btn {
-  height: 42px;
-  min-width: 112px;
-  color: var(--color-ink);
-  background: var(--color-brand-yellow);
-  border-radius: 999px;
-  box-shadow: 0 2px 14px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.34);
-  box-sizing: border-box;
-  padding: 0 14px 0 18px;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  cursor: pointer; flex-shrink: 0;
-  transition: transform 0.1s ease, background 0.1s ease;
-}
-#btnProceed {
-  width: auto;
-  height: 42px;
-  min-width: 112px;
-  max-width: none;
-  min-height: 42px;
-  max-height: 42px;
-}
-.s6-send-label {
-  font-family: var(--font-display);
-  font-size: var(--text-sm);
-  color: var(--color-ink);
-  line-height: 1;
-  white-space: nowrap;
-}
-body.inviter-mode .s6-send-btn:active {
-  background: var(--color-brand-yellow-active);
-  transform: scale(0.9);
-  transition-delay: 0ms !important;
-}
 
 body.inviter-mode .step3-bottom-bar {
   position: absolute;
@@ -2311,4 +2290,184 @@ body.inviter-mode #stickerOverlay.stk-active { pointer-events: none; }
     rgba(255,255,255,0.82) var(--rail-fill,50%),
     rgba(255,255,255,0.15) var(--rail-fill,50%));
   z-index: var(--z-frame-art);
+}
+
+/* Light reference route overrides */
+body.inviter-mode .s6-exit-btn,
+body.inviter-mode .s6-overflow-btn {
+  top: calc(env(safe-area-inset-top, 0px) + 52px);
+  width: 52px;
+  height: 52px;
+  padding: 10px;
+  color: var(--color-ink);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body.inviter-mode .s6-exit-btn {
+  left: var(--space-8);
+}
+
+body.inviter-mode #undoRedoCluster {
+  left: 92px;
+  top: calc(env(safe-area-inset-top, 0px) + 52px);
+  transform: translateY(-16px);
+  gap: var(--space-2);
+  padding: 0;
+  color: var(--color-ink);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body.inviter-mode #undoRedoCluster.visible {
+  transform: translateY(0);
+}
+
+body.inviter-mode #undoRedoCluster.out {
+  transform: translateY(-16px);
+}
+
+body.inviter-mode .history-btn {
+  width: 52px;
+  height: 52px;
+  padding: 10px;
+  color: var(--color-ink);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+body.inviter-mode .history-btn:disabled {
+  color: var(--light-control-muted);
+  opacity: 1;
+}
+
+body.inviter-mode .s6-tools,
+body.inviter-mode .retake-review-tools {
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-5));
+  width: min(calc(100vw - (var(--space-5) * 2)), 430px);
+  min-height: 64px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  gap: var(--space-4);
+  padding: 0 var(--space-3);
+  color: var(--color-ink);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transform: translateX(-50%) translateY(22px);
+}
+
+body.inviter-mode .s6-tools.visible,
+body.inviter-mode .retake-review-tools.visible {
+  transform: translateX(-50%) translateY(0);
+}
+
+body.inviter-mode .s6-tools.out,
+body.inviter-mode .retake-review-tools.out {
+  transform: translateX(-50%) translateY(32px);
+}
+
+body.inviter-mode .s6-tool-btn {
+  width: 46px;
+  height: 46px;
+  max-height: 46px;
+  padding: 9px;
+  color: var(--color-ink);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body.inviter-mode .s6-tool-btn.btn-hidden {
+  display: flex;
+  width: 46px;
+  height: 46px;
+  min-height: 46px;
+  max-height: 46px;
+  padding: 9px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.inviter-mode .s6-tools.tools-collapsed .s6-tool-btn--magicPen,
+body.inviter-mode .s6-tools.tools-collapsed .s6-tool-btn--download,
+body.inviter-mode .retake-review-tools.tools-collapsed .s6-tool-btn--magicPen,
+body.inviter-mode .retake-review-tools.tools-collapsed .s6-tool-btn--download {
+  display: none;
+}
+
+body.inviter-mode .s6-tools-chevron {
+  width: 58px;
+  height: 58px;
+  padding: 13px;
+  color: var(--color-ink);
+  background: var(--light-control-bg);
+  border: 0;
+  border-radius: 22px;
+  box-shadow: var(--light-control-shadow);
+}
+
+body.inviter-mode .s6-tools-chevron .tool-icon-frame,
+body.inviter-mode .s6-tools-chevron .tool-icon-svg {
+  width: 30px;
+  height: 30px;
+}
+
+body.inviter-mode .s6-tools-chevron svg {
+  transform: none;
+}
+
+body.inviter-mode .s6-tools:not(.tools-collapsed) .s6-tools-chevron svg,
+body.inviter-mode .retake-review-tools:not(.tools-collapsed) .s6-tools-chevron svg {
+  transform: rotate(45deg);
+}
+
+body.inviter-mode .tool-label {
+  display: none;
+}
+
+body.inviter-mode .s6-bottom-bar .retake-camera-bottom-actions {
+  right: var(--space-8);
+  top: calc(env(safe-area-inset-top, 0px) + 50px);
+}
+
+body.inviter-mode .s6-bottom-bar .retake-camera-primary-btn {
+  min-width: 96px;
+  height: 58px;
+  min-height: 58px;
+  padding: 0 var(--space-9);
+  border-radius: 24px;
+  color: var(--color-ink);
+  background: var(--color-brand-yellow);
+  box-shadow: none;
+}
+
+body.inviter-mode .s6-bottom-bar .retake-camera-primary-label {
+  font-family: var(--font-system);
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+body.inviter-mode .step3-preview-label {
+  top: calc(env(safe-area-inset-top, 0px) + 78px);
+  color: var(--color-ink);
+  font-family: var(--font-system);
+  font-size: var(--text-md);
+  font-weight: 700;
+  text-shadow: none;
 }

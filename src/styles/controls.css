@@ -75,6 +75,18 @@
   background: var(--glass-control-active);
 }
 
+.control-icon--light {
+  background: transparent;
+  color: var(--color-ink);
+  border: 0;
+  box-shadow: none;
+}
+
+.control-icon--light.active,
+.control-icon--light:active {
+  background: var(--light-control-active);
+}
+
 .control-icon--brand {
   background: var(--color-brand-yellow);
   color: var(--color-ink);

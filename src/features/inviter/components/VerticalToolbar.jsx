@@ -1,7 +1,6 @@
 import React from 'react';
 import GlassSurface from '../../../components/ui/GlassSurface.jsx';
 import GlassIconButton from '../../../components/ui/GlassIconButton.jsx';
-import SolidIconButton from '../../../components/ui/SolidIconButton.jsx';
 import ToolbarToolButton from '../../editor/components/ToolbarToolButton.jsx';
 
 const TOOL_META = {
@@ -10,7 +9,10 @@ const TOOL_META = {
   doodle: { id: 'btnToolDoodle', icon: 'draw', label: 'Draw', activeTool: 'doodle' },
   magicPen: { id: 'btnToolMagicPen', icon: 'magicPen', label: 'Magic Pen', activeTool: 'magicPen' },
   download: { id: 'btnToolDownload', icon: 'save', label: 'Save' },
+  photo: { id: 'btnDockPhoto', icon: 'photo', label: 'Change photo' },
 };
+
+const DOCK_ORDER = ['doodle', 'text', 'magicPen', 'download', 'photo', 'stickers'];
 
 export default function VerticalToolbar({
   visible,
@@ -24,6 +26,7 @@ export default function VerticalToolbar({
   onToolDoodle,
   onToolMagicPen,
   onToolDownload,
+  onPhoto,
   onToggle,
   onInteraction,
   onToolMouseEnter,
@@ -35,7 +38,14 @@ export default function VerticalToolbar({
     doodle: onToolDoodle,
     magicPen: onToolMagicPen,
     download: onToolDownload,
+    photo: onPhoto,
   };
+
+  const allowedTools = new Set(orderedToolIds);
+  const dockToolIds = DOCK_ORDER.filter(toolId => {
+    if (toolId === 'photo') return Boolean(onPhoto);
+    return allowedTools.has(toolId);
+  });
 
   return (
     <GlassSurface
@@ -44,16 +54,17 @@ export default function VerticalToolbar({
       onPointerDown={onInteraction}
       onFocus={onInteraction}
     >
-      {orderedToolIds.map((toolId, index) => {
+      {dockToolIds.map((toolId) => {
         const meta = TOOL_META[toolId];
         if (!meta) return null;
 
         return (
           <ToolbarToolButton
             key={toolId}
+            toolId={toolId}
             {...meta}
             active={meta.activeTool === activeTool}
-            hidden={collapsed && index >= 1}
+            hidden={collapsed && ['magicPen', 'download'].includes(toolId)}
             onClick={handlers[toolId]}
             onMouseEnter={onToolMouseEnter}
             onMouseLeave={onToolMouseLeave}
@@ -63,7 +74,7 @@ export default function VerticalToolbar({
 
       <GlassIconButton
         contained={false}
-        icon="chevron"
+        icon="plus"
         label="Toggle toolbar"
         className="s6-tools-chevron"
         onClick={onToggle}

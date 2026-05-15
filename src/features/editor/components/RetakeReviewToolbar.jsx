@@ -11,6 +11,8 @@ const TOOL_META = {
   download: { id: 'btnToolDownload', icon: 'save', label: 'Save' },
 };
 
+const DOCK_ORDER = ['doodle', 'text', 'magicPen', 'download', 'stickers'];
+
 export default function RetakeReviewToolbar({
   visible,
   out,
@@ -35,6 +37,8 @@ export default function RetakeReviewToolbar({
     magicPen: onToolMagicPen,
     download: onToolDownload,
   };
+  const allowedTools = new Set(orderedToolIds);
+  const dockToolIds = DOCK_ORDER.filter(toolId => allowedTools.has(toolId));
 
   return (
     <GlassSurface
@@ -42,16 +46,17 @@ export default function RetakeReviewToolbar({
       onPointerDown={onInteraction}
       onFocus={onInteraction}
     >
-      {orderedToolIds.map((toolId, index) => {
+      {dockToolIds.map((toolId) => {
         const meta = TOOL_META[toolId];
         if (!meta) return null;
 
         return (
           <ToolbarToolButton
             key={toolId}
+            toolId={toolId}
             {...meta}
             active={meta.activeTool === activeTool}
-            hidden={collapsed && index >= 1}
+            hidden={collapsed && ['magicPen', 'download'].includes(toolId)}
             onClick={handlers[toolId]}
             onMouseEnter={onToolMouseEnter}
             onMouseLeave={onToolMouseLeave}
@@ -61,7 +66,7 @@ export default function RetakeReviewToolbar({
 
       <GlassIconButton
         contained={false}
-        icon="chevron"
+        icon="plus"
         label="Toggle toolbar"
         className="s6-tools-chevron"
         onClick={onToggle}

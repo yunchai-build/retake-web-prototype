@@ -1,5 +1,5 @@
 body.invitee-mode {
-  background: #000;
+  background: var(--light-shell-bg);
   margin: 0;
   width: 100vw;
   height: 100dvh;
@@ -9,15 +9,19 @@ body.invitee-mode {
 
 body.invitee-mode .invitee-screen {
   --canvas-chrome-inset: 18px;
-  --invitee-frame-height: min(calc(100vw * 16 / 9), 100dvh);
-  --invitee-frame-bottom-offset: calc((100dvh - var(--invitee-frame-height)) / 2);
+  --light-shell-pad: max(var(--space-8), env(safe-area-inset-left, 0px));
+  --light-canvas-top: calc(env(safe-area-inset-top, 0px) + 132px);
+  --light-canvas-bottom: calc(env(safe-area-inset-bottom, 0px) + 94px);
+  --light-canvas-max-height: calc(100dvh - var(--light-canvas-top) - var(--light-canvas-bottom));
+  --invitee-frame-height: min(calc((100vw - (var(--light-shell-pad) * 2)) * 16 / 9), var(--light-canvas-max-height));
+  --invitee-frame-bottom-offset: 0px;
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100dvh;
-  background: #000;
+  background: var(--light-shell-bg);
   overflow: hidden;
-  color: var(--color-white);
+  color: var(--color-ink);
 }
 
 body.invitee-mode .invitee-screen--entry {
@@ -88,12 +92,16 @@ body.invitee-mode .invitee-screen--entry {
 
 body.invitee-mode #frameContainer {
   position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100vw;
-  height: var(--invitee-frame-height);
-  transform: translateY(-50%);
-  border-radius: var(--radius-canvas);
+  top: var(--light-canvas-top);
+  left: 50%;
+  width: min(
+    calc(100vw - (var(--light-shell-pad) * 2)),
+    calc(var(--light-canvas-max-height) * 9 / 16)
+  );
+  height: auto;
+  aspect-ratio: 9 / 16;
+  transform: translateX(-50%);
+  border-radius: 34px;
   overflow: hidden;
   background: #000;
   z-index: var(--z-live-media);
@@ -201,238 +209,6 @@ body.invitee-mode #tmLeftPanel {
 
 body.invitee-mode .retake-camera-bottom-bar.invitee-s3-bottom-bar {
   bottom: calc(var(--invitee-frame-bottom-offset) + var(--canvas-chrome-inset));
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.has-primary-avatar {
-  width: calc(var(--control-icon-size) + var(--space-3) + var(--space-13) + var(--space-5));
-  min-width: calc(var(--control-icon-size) + var(--space-3) + var(--space-13) + var(--space-5));
-  height: calc(var(--control-icon-size) + (var(--space-2) * 2));
-  min-height: calc(var(--control-icon-size) + (var(--space-2) * 2));
-  padding: var(--space-2) var(--space-6) var(--space-2) var(--space-2);
-  gap: var(--space-3);
-  background: var(--color-brand-yellow);
-  color: var(--color-ink);
-  border-color: var(--glass-control-border);
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.34);
-  overflow: visible;
-  transition:
-    width var(--motion-panel),
-    min-width var(--motion-panel),
-    padding var(--motion-panel),
-    gap var(--motion-panel),
-    border-radius var(--motion-panel),
-    background var(--motion-medium),
-    box-shadow var(--motion-medium),
-    opacity var(--motion-medium),
-    transform 0.1s ease;
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy {
-  position: relative;
-  isolation: isolate;
-  width: calc(var(--control-icon-size) + (var(--space-2) * 2));
-  min-width: calc(var(--control-icon-size) + (var(--space-2) * 2));
-  padding: var(--space-2);
-  gap: 0;
-  border-radius: 50%;
-  justify-content: center;
-  overflow: hidden;
-  cursor: wait;
-  opacity: 1;
-  animation: invitee-send-button-breathe 1.6s ease-in-out infinite alternate;
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  background: linear-gradient(110deg, transparent 10%, rgba(255, 255, 255, 0.3) 42%, transparent 68%);
-  opacity: 0.36;
-  transform: translateX(-130%) rotate(18deg);
-  animation: invitee-send-button-shimmer 2.15s ease-in-out infinite;
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy:active {
-  transform: none;
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy .retake-camera-primary-avatar-set,
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy .retake-camera-primary-label {
-  position: relative;
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy .retake-camera-primary-avatar-set {
-  width: var(--control-icon-size);
-  height: var(--control-icon-size);
-  justify-content: center;
-  z-index: 1;
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy .retake-camera-primary-avatar-set::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: var(--space-2);
-  z-index: 2;
-  width: 3px;
-  height: var(--space-5);
-  border-radius: var(--radius-pill);
-  background: var(--color-brand-yellow);
-  box-shadow: 0 1px 4px rgba(var(--color-ink-rgb), 0.34);
-  opacity: 0;
-  transform: translate(-50%, var(--space-5));
-  animation: invitee-send-arrow-rise 1.22s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy .retake-camera-primary-avatar-set::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: var(--space-4);
-  z-index: 2;
-  width: var(--space-4);
-  height: var(--space-4);
-  border-top: 3px solid var(--color-brand-yellow);
-  border-left: 3px solid var(--color-brand-yellow);
-  border-radius: 2px 0 0 0;
-  filter: drop-shadow(0 1px 3px rgba(var(--color-ink-rgb), 0.34));
-  opacity: 0;
-  transform: translate(-50%, var(--space-5)) rotate(45deg);
-  animation: invitee-send-arrow-head-rise 1.22s cubic-bezier(0.22, 1, 0.36, 1) infinite;
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy .retake-camera-primary-avatar {
-  position: relative;
-  z-index: 1;
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy .retake-camera-primary-avatar::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: inherit;
-  background: rgba(var(--color-ink-rgb), 0.78);
-  opacity: 1;
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy .retake-camera-primary-avatar img,
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy .retake-camera-primary-avatar span {
-  opacity: 0;
-  transform: scale(0.92);
-  transition: opacity var(--motion-medium), transform var(--motion-panel);
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.is-primary-busy .retake-camera-primary-label {
-  width: 0;
-  max-width: 0;
-  opacity: 0;
-  overflow: hidden;
-  transform: translateX(calc(var(--space-2) * -1));
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-btn.has-primary-avatar:active {
-  background: var(--color-brand-yellow-active);
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-avatar-set {
-  gap: 0;
-  transition: width var(--motion-panel), height var(--motion-panel);
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-avatar {
-  width: var(--control-icon-size);
-  height: var(--control-icon-size);
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-avatar--placeholder {
-  background: var(--color-ink);
-  color: var(--color-brand-yellow);
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-avatar span {
-  font-size: var(--text-sm);
-}
-
-body.invitee-mode .invitee-s3-bottom-bar .retake-camera-primary-label {
-  color: var(--color-ink);
-  font-size: var(--text-sm);
-  text-align: left;
-  white-space: nowrap;
-  max-width: var(--space-13);
-  transition:
-    max-width var(--motion-panel),
-    width var(--motion-panel),
-    opacity var(--motion-medium),
-    transform var(--motion-panel);
-}
-
-@keyframes invitee-send-button-breathe {
-  from {
-    background: var(--color-brand-yellow);
-    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.34);
-  }
-
-  to {
-    background: var(--color-brand-yellow);
-    box-shadow: 0 3px 18px rgba(var(--color-ink-rgb), 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.38);
-  }
-}
-
-@keyframes invitee-send-button-shimmer {
-  0%,
-  34% {
-    transform: translateX(-130%) rotate(18deg);
-  }
-
-  78%,
-  100% {
-    transform: translateX(130%) rotate(18deg);
-  }
-}
-
-@keyframes invitee-send-arrow-rise {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, var(--space-5)) scaleY(0.78);
-  }
-
-  22% {
-    opacity: 1;
-  }
-
-  68% {
-    opacity: 1;
-    transform: translate(-50%, calc(var(--space-2) * -1)) scaleY(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate(-50%, calc(var(--space-6) * -1)) scaleY(0.88);
-  }
-}
-
-@keyframes invitee-send-arrow-head-rise {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, var(--space-5)) rotate(45deg) scale(0.82);
-  }
-
-  22% {
-    opacity: 1;
-  }
-
-  68% {
-    opacity: 1;
-    transform: translate(-50%, calc(var(--space-2) * -1)) rotate(45deg) scale(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate(-50%, calc(var(--space-6) * -1)) rotate(45deg) scale(0.9);
-  }
 }
 
 body.invitee-mode .s6-bottom-bar {
@@ -680,4 +456,50 @@ body.invitee-mode .s6-toast.visible {
   .invitee-submitted-confirmation {
     gap: var(--space-4);
   }
+}
+
+/* Light reference accepted-camera overrides */
+body.invitee-mode #frameContainer::after,
+body.invitee-mode #frameScrim,
+body.invitee-mode #frameScrim.visible {
+  opacity: 0;
+}
+
+body.invitee-mode .s6-exit-btn,
+body.invitee-mode #undoRedoCluster,
+body.invitee-mode .s6-tools {
+  top: auto;
+}
+
+body.invitee-mode .s6-exit-btn {
+  left: var(--space-8);
+  top: calc(env(safe-area-inset-top, 0px) + 52px);
+}
+
+body.invitee-mode #undoRedoCluster {
+  left: 92px;
+  top: calc(env(safe-area-inset-top, 0px) + 52px);
+}
+
+body.invitee-mode .s6-tools {
+  left: 50%;
+  right: auto;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-5));
+}
+
+body.invitee-mode .retake-camera-bottom-bar.invitee-s3-bottom-bar,
+body.invitee-mode .s6-bottom-bar {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-5));
+}
+
+body.invitee-mode .invitee-camera-zoom-control {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 112px);
+}
+
+body.invitee-mode .invitee-camera-gesture-toast {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 150px);
+}
+
+body.invitee-mode .s6-toast {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 128px);
 }

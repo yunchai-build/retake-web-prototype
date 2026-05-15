@@ -1152,6 +1152,7 @@ export default function InviteePage() {
             showPlaceholder: true,
             text: getAvatarText(invite?.username) || '?',
           }}
+          primaryVariant="avatar-chip"
           primaryText="Send"
           primaryBusy={submitting}
           primaryLabel={

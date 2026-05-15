@@ -6,6 +6,7 @@ Retake uses a code-first design system. Code tokens and reusable components are 
 
 - Retake is mobile-first, camera-forward, playful, and tool-like.
 - Preserve the current identity: glass tool chrome, solid yellow brand moments, Bedstead display type, dark ink text, canvas/editor controls, stickers, and fast motion.
+- The light reference editor direction keeps Retake yellow for primary actions while using a white shell, dark ink icon chrome, structured top/bottom control rows, and a dotted transparent canvas.
 - New UI should feel like part of the editor or invite flow, not a separate marketing page.
 
 ## CSS Layers
@@ -14,7 +15,7 @@ Retake uses a code-first design system. Code tokens and reusable components are 
 - `base.css`: reset styles, fonts, body defaults, form inheritance, and tap highlight behavior.
 - `glass.css`: translucent material only. Use it for toolbars, icon buttons, action pills, floating controls, and glass sliders.
 - `brand.css`: solid Retake brand moments. Use it for yellow cards, popups, sheets, invite cards, share/name popups, and brand buttons.
-- `controls.css`: shared button and pill material classes. Use it for glass, solid, and brand control materials before adding route-specific positioning.
+- `controls.css`: shared button and pill material classes. Use it for glass, solid, light, and brand control materials before adding route-specific positioning.
 - `overlays.css`: shared overlay structure. Use it for scrims, confirmation dialogs, modal positioning, bottom sheets, and reusable overlay transitions.
 - `inviter.css`: route-specific layout and choreography only.
 
@@ -25,6 +26,7 @@ Use semantic tokens instead of raw values in new CSS. Important tokens include:
 - `--color-brand-yellow`, `--color-brand-yellow-active`, `--color-ink`, `--color-canvas`, `--color-page`
 - `--surface-brand-bg`, `--surface-brand-fg`, `--surface-brand-muted`
 - `--glass-bg`, `--glass-filter`, `--glass-border`, `--glass-control-bg`, `--glass-control-active`
+- `--light-shell-bg`, `--light-canvas-bg`, `--light-dot-color`, `--light-control-bg`, `--light-control-active`
 - `--font-display`, `--text-sm`, `--text-title`, `--text-hero`
 - `--radius-pill`, `--radius-button`, `--radius-card`, `--radius-canvas`
 - `--motion-fast`, `--motion-medium`, `--motion-panel`, `--motion-enter`
@@ -40,7 +42,7 @@ Reusable UI belongs in `src/components/ui`. Product-specific behavior belongs in
 - Use `SolidIconButton` for controls inside glass containers and for solid neutral panel controls: gallery, sticker close, sticker tabs, new-sticker close, refine back, toolbar tools, undo/redo, and bottom-bar actions.
 - Use brand components for yellow, high-attention Retake moments.
 - Keep component prop contracts small and explicit, such as `IconButton({ icon, label, material, shape, active, disabled, onClick })`.
-- Prefer material plus shape over ID styling: `material="glass" | "solid" | "brand"` and `shape="circle" | "pill" | "square"`.
+- Prefer material plus shape over ID styling: `material="glass" | "solid" | "light" | "brand"` and `shape="circle" | "pill" | "square"`.
 - Avoid writing new visual rules directly in route CSS unless the rule is truly page layout or one-off choreography.
 
 ## Figma Workflow

@@ -29,8 +29,8 @@ export function filterOrderedToolIds(orderedToolIds, allowedToolIds) {
 }
 
 export function useToolbarState() {
-  const [toolsCollapsed, setToolsCollapsed] = useState(false);
-  const toolsCollapsedRef = useRef(false);
+  const [toolsCollapsed, setToolsCollapsed] = useState(true);
+  const toolsCollapsedRef = useRef(true);
   const toolsCollapseTimerRef = useRef(null);
 
   const [labelsExpanded, setLabelsExpanded] = useState(false);
