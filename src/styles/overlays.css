@@ -27,11 +27,14 @@
 .toast {
   width: fit-content;
   white-space: nowrap;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-filter);
-  -webkit-backdrop-filter: var(--glass-filter);
-  border: 0;
-  box-shadow: var(--glass-shadow);
+  /* Solid near-black so the toast is legible on every background — the
+     previous translucent glass disappeared on top of the brand-yellow
+     share/save screens (the toast text just looked yellow on yellow). */
+  background: rgba(18, 16, 30, 0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.32);
   border-radius: var(--radius-pill);
   padding: 12px 24px;
   text-align: center;
@@ -40,7 +43,7 @@
   transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.22,1,0.36,1);
   font-family: var(--font-display);
   font-size: var(--text-sm);
-  color: var(--glass-icon-color);
+  color: rgba(255, 255, 255, 0.98);
 }
 
 .toast.visible {

@@ -12,7 +12,6 @@ import StickerPanel from '../editor/components/StickerPanel.jsx';
 import TextToolOverlay from '../editor/components/TextToolOverlay.jsx';
 import DrawingToolOverlays from '../editor/components/DrawingToolOverlays.jsx';
 import RetakeCameraBottomBar from '../editor/components/RetakeCameraBottomBar.jsx';
-import RetakeCameraControls from '../editor/components/RetakeCameraControls.jsx';
 import CameraGestureToast from '../editor/components/CameraGestureToast.jsx';
 import { RetakeCountdownOverlay, RetakeScreenFlash } from '../editor/components/RetakeCameraOverlays.jsx';
 import RetakeCameraStage from '../editor/components/RetakeCameraStage.jsx';
@@ -28,7 +27,9 @@ import VerticalToolbar from '../inviter/components/VerticalToolbar.jsx';
 import BottomBar from '../inviter/components/BottomBar.jsx';
 import PhotoInputs from '../inviter/components/PhotoInputs.jsx';
 import { chooseRetakeVideoMimeType, drawRetakeWatermark } from '../editor/utils/retakeCamera.js';
+import { drawMediaCoverWithTransform } from '../editor/utils/canvas.js';
 import { getInvite, recordRetake, uploadRetakeMedia } from '../../lib/api.js';
+import { buildInviteUrl } from '../../lib/routes.js';
 import { INVITEE_FLOW_STATES } from './state.js';
 import InviteAcceptCard from './components/InviteAcceptCard.jsx';
 import SubmittedRetakeBanner from './components/SubmittedRetakeBanner.jsx';
@@ -769,7 +770,15 @@ export default function InviteePage() {
     const frame = await loadImage(invite.frameUrl);
     ctx.fillStyle = INVITEE_COMPOSITION_BG;
     ctx.fillRect(0, 0, out.width, out.height);
-    ctx.drawImage(photo, 0, 0, out.width, out.height);
+    // Apply the same pan/zoom the user set on the review screen so the saved
+    // photo matches what they composed (works for both live captures and
+    // gallery imports).
+    const photoTransform = camera.cameraTransformRef?.current;
+    if (photoTransform) {
+      drawMediaCoverWithTransform(ctx, photo, out.width, out.height, photoTransform);
+    } else {
+      ctx.drawImage(photo, 0, 0, out.width, out.height);
+    }
     const overlayCanvas = document.createElement('canvas');
     overlayCanvas.width = out.width;
     overlayCanvas.height = out.height;
@@ -961,9 +970,20 @@ export default function InviteePage() {
       return;
     }
 
+    // Include the original invite URL so friends can use the same frame template
+    // (viral loop). If for some reason the invite has no id, fall back to the
+    // current page URL which already points to the invite.
+    const templateUrl = invite?.id ? buildInviteUrl(invite.id) : window.location.href;
+    const ownerLabel = invite?.username && invite.username !== 'yunchai'
+      ? `${invite.username}'s`
+      : 'this';
+    // Put the URL ONLY in the `url` field. iOS / Android share sheets append
+    // the URL to the message automatically; including it in `text` too causes
+    // the link to appear twice in iMessage, WhatsApp, etc.
     const sharePayload = {
       title: 'My Retake',
-      text: `Retake sent to ${invite?.username || 'them'}`,
+      text: `My Retake on ${ownerLabel} frame — try the same one`,
+      url: templateUrl,
     };
 
     if (navigator.share) {
@@ -1027,16 +1047,6 @@ export default function InviteePage() {
         {invite?.frameUrl && (
           <img className="invitee-frame-overlay" src={invite.frameUrl} alt="" draggable="false" />
         )}
-        <RetakeCameraControls
-          visible={camera.live && !camera.captureBusy}
-          flashAvailable={camera.cameraReady}
-          flashEnabled={camera.flashEnabled}
-          timerSeconds={camera.timerSeconds}
-          onFlash={camera.toggleFlash}
-          onTimer={camera.toggleTimer}
-          onFlip={camera.flipCamera}
-          showFlip={false}
-        />
         {camera.live && (
           <GlassIconButton
             className={`invitee-capture-button${camera.recording ? ' is-recording' : ''}`}
@@ -1052,6 +1062,14 @@ export default function InviteePage() {
             </svg>
             <span className="invitee-capture-inner" aria-hidden="true" />
           </GlassIconButton>
+        )}
+        {camera.live && !camera.captureBusy && (
+          <GlassIconButton
+            className="invitee-flip-button"
+            icon="flipCamera"
+            label="Flip camera"
+            onClick={camera.flipCamera}
+          />
         )}
       </FrameCanvas>
 

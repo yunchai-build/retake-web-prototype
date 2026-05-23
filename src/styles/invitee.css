@@ -195,6 +195,17 @@ body.invitee-mode #tmLeftPanel {
   bottom: calc(var(--invitee-frame-bottom-offset) + var(--canvas-chrome-inset) + 108px);
 }
 
+/* Standalone flip-camera button, anchored bottom-right at the same vertical
+   position as the bottom-left photo library button (.s6-bottom-bar). Replaces
+   the previous center-bottom RetakeCameraControls bar (timer + flash + flip)
+   since invitee-side capture doesn't need timer/flash. */
+.invitee-flip-button {
+  position: absolute;
+  right: var(--canvas-chrome-inset);
+  bottom: calc(var(--invitee-frame-bottom-offset) + var(--canvas-chrome-inset));
+  z-index: var(--z-editor-chrome);
+}
+
 .invitee-camera-gesture-toast {
   bottom: calc(var(--invitee-frame-bottom-offset) + var(--canvas-chrome-inset) + 146px);
 }

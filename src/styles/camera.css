@@ -18,7 +18,8 @@
   background: var(--color-ink);
 }
 
-.retake-camera-video {
+.retake-camera-video,
+.retake-captured-photo {
   transform-origin: center center;
   will-change: transform;
 }
