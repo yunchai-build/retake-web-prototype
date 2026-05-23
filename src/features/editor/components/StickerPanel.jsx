@@ -6,7 +6,6 @@ import SolidSurface from '../../../components/ui/SolidSurface.jsx';
 import StickerEmptyState from './StickerEmptyState.jsx';
 import SelectionModeButtons from './SelectionModeButtons.jsx';
 import StickerRefineControls from './StickerRefineControls.jsx';
-import OpacitySlider from './OpacitySlider.jsx';
 import ToolIcon from '../../../components/icons/ToolIcon.jsx';
 
 const SP_TABS = [
@@ -71,6 +70,7 @@ export default function StickerPanel({ sys }) {
     nsConfirmLasso,
     nsBackToLasso,
     nsApply,
+    nsClearAllMarks,
     nsSetSelectionMode,
     nsSetRefMode,
     nsHandleOpacityInput,
@@ -234,23 +234,17 @@ export default function StickerPanel({ sys }) {
             ) : (
               <>
                 <span className="sticker-maker-hint">{selectionHint}</span>
-                <div className="sticker-maker-pill glass-floaty-surface glass-tool-pill">
+                {/* Stage A (mode select): only the selection-mode icons.
+                    The opacity slider that used to live here had no visible
+                    effect during selection (the mask doesn't exist yet) — it
+                    confused users into thinking it was a contrast control.
+                    It still lives in Stage B (refine) where it actually
+                    controls the final sticker opacity. */}
+                <div className="sticker-maker-pill glass-floaty-surface glass-tool-pill sticker-maker-stageA">
                   <SelectionModeButtons
+                    className="sticker-maker-modes"
                     mode={nsSelectionMode}
                     onModeClick={nsSetSelectionMode}
-                  />
-                  <div className="tm-divider" />
-                  <OpacitySlider
-                    inline
-                    inputId="nsMakerOpacitySlider"
-                    valueClassName="tm-val"
-                    valueLabel={`${nsOpacity}%`}
-                    min="10"
-                    max="100"
-                    value={nsOpacity}
-                    style={{ '--fill': `${nsOpacity}%` }}
-                    onInput={nsHandleOpacityInput}
-                    onChange={nsHandleOpacityInput}
                   />
                 </div>
               </>
@@ -266,6 +260,7 @@ export default function StickerPanel({ sys }) {
               onRefMode={nsSetRefMode}
               onOpacityInput={nsHandleOpacityInput}
               onApply={nsApply}
+              onClearAll={nsClearAllMarks}
             />
           </div>
         </div>

@@ -151,6 +151,7 @@ function clampPortraitHeightTransform({
   transformScale,
   offsetY,
   rotation,
+  allowZoomOut = false,
 }) {
   const isPortraitHeightFit = fit === 'portrait-height' && sourceHeight > sourceWidth;
   if (!isPortraitHeightFit) return { scale: transformScale, offsetY };
@@ -161,12 +162,22 @@ function clampPortraitHeightTransform({
     Math.abs(drawWidth * Math.sin(rotationRadians))
     + Math.abs(drawHeight * Math.cos(rotationRadians))
   ) || drawHeight;
-  const effectiveScale = Math.max(transformScale, height / rotatedHeight);
+  // When allowZoomOut is true we leave the user-controlled scale alone so the
+  // photo can shrink below the canvas height. The empty area around it then
+  // shows the average-color background filled in drawContainedImageWithBackground.
+  const effectiveScale = allowZoomOut
+    ? transformScale
+    : Math.max(transformScale, height / rotatedHeight);
 
   const verticalOverflow = Math.max(0, (rotatedHeight * effectiveScale - height) / 2);
+  // When the photo is smaller than the canvas, also allow vertical offset within
+  // the canvas (so the user can drag the photo around its empty backdrop).
+  const verticalSlack = allowZoomOut && effectiveScale * rotatedHeight < height
+    ? (height - effectiveScale * rotatedHeight) / 2
+    : verticalOverflow;
   return {
     scale: effectiveScale,
-    offsetY: Math.max(-verticalOverflow, Math.min(verticalOverflow, offsetY)),
+    offsetY: Math.max(-verticalSlack, Math.min(verticalSlack, offsetY)),
   };
 }
 
@@ -177,6 +188,7 @@ export function drawContainedImageWithBackground(ctx, image, width, height, opti
     backgroundColor,
     fit = 'contain',
     transform = {},
+    allowZoomOut = false,
   } = typeof options === 'string' ? { fallback: options } : options;
   const {
     scale: transformScale = 1,
@@ -201,12 +213,18 @@ export function drawContainedImageWithBackground(ctx, image, width, height, opti
     transformScale,
     offsetY,
     rotation,
+    allowZoomOut,
   });
 
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = backgroundColor || getAverageImageColor(image, fallback);
   ctx.fillRect(0, 0, width, height);
   ctx.save();
+  // Use the highest-quality smoothing browsers offer. Without this, scaling
+  // photos down (zoom-out / small thumbnails) produces visible staircase
+  // aliasing on near-horizontal lines — especially noticeable on mobile.
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.translate(width / 2 + offsetX, height / 2 + safeTransform.offsetY);
   ctx.rotate(rotation * Math.PI / 180);
   ctx.scale((mirror ? -1 : 1) * safeTransform.scale, safeTransform.scale);
@@ -239,6 +257,10 @@ export function drawMediaCoverWithTransform(ctx, source, width, height, transfor
   const drawHeight = sourceHeight * baseScale;
 
   ctx.save();
+  // Match the high-quality smoothing used in drawContainedImageWithBackground
+  // so the same photo doesn't suddenly alias when re-composed at submit time.
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.translate(width / 2 + offsetX, height / 2 + offsetY);
   ctx.rotate(rotation * Math.PI / 180);
   ctx.scale((mirror ? -1 : 1) * scale, scale);

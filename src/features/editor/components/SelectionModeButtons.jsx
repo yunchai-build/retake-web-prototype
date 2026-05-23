@@ -3,10 +3,27 @@ import React from 'react';
 export const SELECTION_MODES = [
   {
     mode: 'freehand',
-    label: 'Freehand',
+    // Now behaves as a Loop: drawn path is closed into a polygon and the
+    // *interior* becomes the sticker. The icon shows a closed loop to hint at
+    // that — the previous wavy stroke implied freeform pen strokes (the new
+    // `pen` mode below covers that case manually).
+    label: 'Draw the sticker edge by hand',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 20 Q8 8 12 14 Q16 20 20 6" />
+        <path d="M5 12c0-4 3-7 7-7s7 3 7 7-3 7-7 7c-2 0-3-1-3-2s1-2 2-2" />
+      </svg>
+    ),
+  },
+  {
+    mode: 'pen',
+    // Manual pen — paint the mask pixel by pixel (the old freehand behavior).
+    // Lives next to Freehand so users have both choices: quick lasso vs.
+    // precise manual outline.
+    label: 'Pen — paint manually',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="var(--icon-stroke-width)" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 21l3-1 11-11-3-3L3 17v4z" />
+        <path d="M14 4l3 3" />
       </svg>
     ),
   },

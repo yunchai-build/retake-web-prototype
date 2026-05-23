@@ -312,13 +312,19 @@ export function useCanvasDrawing({
       return;
     }
     sel.classList.add('sel-active');
-    sel.style.opacity = '1';
+    // Tie the boundary preview's CSS opacity to the magic-pen strength slider
+    // so the slider has *immediate* visible feedback during the lasso stage
+    // (otherwise users see no effect until apply time and assume the bar is
+    // broken). Floor at 0.55 so the boundary is always visible enough to
+    // continue drawing.
+    const strengthNorm = Math.max(5, Math.min(100, magicPenOpacityRef?.current ?? 100)) / 100;
+    sel.style.opacity = String(Math.max(0.55, strengthNorm));
     drawMagicSelectionStroke(selCtx, {
       points: pts,
       closed,
       dashOffset: magicLassoDashRef.current,
     });
-  }, [selectionCanvasRef]);
+  }, [magicPenOpacityRef, selectionCanvasRef]);
 
   const animateMagicLasso = useCallback(() => {
     renderMagicLasso(!magicLassoDownRef.current);
@@ -491,8 +497,16 @@ export function useCanvasDrawing({
   }, [renderMagicMask, showToast, syncMagicHistoryButtons]);
 
   const refreshMagicSelectionPreview = useCallback(() => {
-    if (magicMaskRef.current) renderMagicMask(magicMaskRef.current);
-  }, [renderMagicMask]);
+    // If a mask is already built (refine phase), refresh its overlay so the
+    // strength slider updates the red preview in real time. Otherwise we're
+    // mid-lasso — re-render the boundary so the new slider value updates the
+    // boundary's CSS opacity (which is now tied to magicPenOpacityRef).
+    if (magicMaskRef.current) {
+      renderMagicMask(magicMaskRef.current);
+    } else if (magicLassoPtsRef.current.length >= 2) {
+      renderMagicLasso(!magicLassoDownRef.current);
+    }
+  }, [renderMagicLasso, renderMagicMask]);
 
   const paintAt = useCallback((x, y, fx, fy) => {
     const ctx = ctxRef.current;

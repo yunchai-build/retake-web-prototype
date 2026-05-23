@@ -47,7 +47,13 @@ export default function RetakeCameraStage({
         </>
       )}
       {isPhotoReview && photoUrl && (
-        <img className="retake-captured-photo" src={photoUrl} alt="" draggable="false" />
+        <img
+          className="retake-captured-photo"
+          src={photoUrl}
+          alt=""
+          draggable="false"
+          style={cameraStyle}
+        />
       )}
       {isVideoReview && videoUrl && (
         <video

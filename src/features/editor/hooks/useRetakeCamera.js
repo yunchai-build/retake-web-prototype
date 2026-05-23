@@ -221,6 +221,10 @@ export default function useRetakeCamera({
       videoBlobRef.current = null;
       setMode(RETAKE_CAMERA_MODE.PHOTO);
       stopCamera();
+      // The captured frame already has the live-camera transform baked in, so
+      // reset the transform here. The user can now apply a *new* pan/zoom on
+      // the review screen which will be composed in at save time.
+      cameraTransform.reset(false);
       onToast?.('Add stickers, text, or draw');
     } catch (err) {
       releaseScreenFlash();
@@ -238,8 +242,11 @@ export default function useRetakeCamera({
     videoBlobRef.current = null;
     setMode(RETAKE_CAMERA_MODE.PHOTO);
     stopCamera();
-    onToast?.('Add stickers, text, or draw');
-  }, [onToast, revokeVideoUrl, stopCamera]);
+    // Gallery imports start from a fresh transform so the user can pan/zoom
+    // the photo into place. Avoid inheriting any prior live-camera zoom.
+    cameraTransform.reset(false);
+    onToast?.('Pinch to zoom or drag to position');
+  }, [cameraTransform, onToast, revokeVideoUrl, stopCamera]);
 
   const stopRecording = useCallback(() => {
     clearTimeout(recordStopTimerRef.current);
@@ -446,8 +453,12 @@ export default function useRetakeCamera({
     if (recordingRef.current || recordingStartingRef.current) stopRecording();
   }, [cameraTransform, cancelCountdown, mode, stopRecording]);
 
+  const isTransformableMode = (m) => (
+    m === RETAKE_CAMERA_MODE.LIVE || m === RETAKE_CAMERA_MODE.PHOTO
+  );
+
   const handlePreviewPointerDown = useCallback((e) => {
-    if (mode !== RETAKE_CAMERA_MODE.LIVE) return;
+    if (!isTransformableMode(mode)) return;
     e.preventDefault();
     cameraTransform.handlePointerDown(e);
     pointerMovedRef.current = e.isPrimary === false;
@@ -459,13 +470,14 @@ export default function useRetakeCamera({
   }, [cameraTransform, mode]);
 
   const handlePreviewPointerMove = useCallback((e) => {
-    if (mode !== RETAKE_CAMERA_MODE.LIVE || recordingRef.current || recordingStartingRef.current) return;
+    if (!isTransformableMode(mode)) return;
+    if (mode === RETAKE_CAMERA_MODE.LIVE && (recordingRef.current || recordingStartingRef.current)) return;
     const moved = cameraTransform.handlePointerMove(e);
     if (moved) pointerMovedRef.current = true;
   }, [cameraTransform, mode]);
 
   const handlePreviewPointerUp = useCallback(async (e) => {
-    if (mode !== RETAKE_CAMERA_MODE.LIVE) return;
+    if (!isTransformableMode(mode)) return;
     e.preventDefault();
     const movedCamera = cameraTransform.handlePointerUp(e) || pointerMovedRef.current;
     if (pointerIdRef.current !== null && e.pointerId !== pointerIdRef.current) {
@@ -478,6 +490,13 @@ export default function useRetakeCamera({
     pointerMovedRef.current = false;
     clearTimeout(longPressTimerRef.current);
     longPressTimerRef.current = null;
+
+    // Double-tap-to-flip only makes sense while the live camera is showing.
+    if (mode !== RETAKE_CAMERA_MODE.LIVE) {
+      lastPreviewTapAtRef.current = 0;
+      return;
+    }
+
     if (movedCamera || recordingRef.current || recordingStartingRef.current || countdownModeRef.current) {
       lastPreviewTapAtRef.current = 0;
       return;
@@ -493,7 +512,7 @@ export default function useRetakeCamera({
   }, [cameraTransform, flipCamera, mode]);
 
   const handlePreviewPointerCancel = useCallback((e) => {
-    if (mode !== RETAKE_CAMERA_MODE.LIVE) return;
+    if (!isTransformableMode(mode)) return;
     e.preventDefault();
     cameraTransform.handlePointerUp(e);
     pointerDownRef.current = false;
@@ -598,6 +617,7 @@ export default function useRetakeCamera({
     cameraReady,
     cameraIssue,
     cameraStyle: cameraTransform.style,
+    cameraTransformRef: cameraTransform.transformRef,
     flashEnabled,
     screenFlashActive,
     usesScreenFlash,

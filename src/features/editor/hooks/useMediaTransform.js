@@ -7,7 +7,10 @@ import {
 } from '../utils/transformGesture.js';
 
 const DEFAULT_SIZE = { width: 414, height: 736 };
-const MIN_SCALE = 0.65;
+// Allow generous zoom-out so background photos can shrink inside the canvas
+// (Instagram-style polaroid look). The empty area is filled with the photo's
+// average color by drawContainedImageWithBackground at composition time.
+const MIN_SCALE = 0.3;
 const MAX_SCALE = 4;
 
 export default function useMediaTransform({

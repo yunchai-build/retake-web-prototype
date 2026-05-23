@@ -239,11 +239,22 @@ export function useStickerSystem({
     overlayParentRef?.current || stickerOverlayRef.current
   ), [overlayParentRef]);
 
+  // Stable reference to removeSticker so the delete-button event handler can
+  // call the latest version without recreating its listener every render.
+  const removeStickerRef = useRef(null);
+
   // ── Transform ──
   const applyStickerTransform = useCallback((stk) => {
     stk.el.style.left      = stk.x + 'px';
     stk.el.style.top       = stk.y + 'px';
     stk.el.style.transform = `scale(${stk.scale}) rotate(${stk.rotation}deg)`;
+    // Counter-transform the delete button so it stays at constant size and
+    // upright regardless of the sticker's own scale/rotation.
+    const delBtn = stk.el.querySelector(':scope > .stk-delete-btn');
+    if (delBtn) {
+      const invScale = stk.scale ? 1 / stk.scale : 1;
+      delBtn.style.transform = `scale(${invScale}) rotate(${-stk.rotation}deg)`;
+    }
   }, []);
 
   const bringStickerToFront = useCallback((stk) => {
@@ -267,12 +278,63 @@ export function useStickerSystem({
     selectedStickerRef.current = null;
   }, []);
 
+  const ensureDeleteButton = useCallback((stk) => {
+    if (stk.el.querySelector(':scope > .stk-delete-btn')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'stk-delete-btn';
+    btn.setAttribute('aria-label', 'Delete sticker');
+    btn.innerHTML = (
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+      + 'stroke-width="2.6" stroke-linecap="round">'
+      + '<line x1="6" y1="6" x2="18" y2="18"/>'
+      + '<line x1="18" y1="6" x2="6" y2="18"/>'
+      + '</svg>'
+    );
+    // Parent sticker uses touchstart with preventDefault that swallows the
+    // synthesized click. Handle the tap on pointerup/touchend ourselves and
+    // just stop propagation to the parent.
+    let pressed = false;
+    let startedAt = 0;
+    const startPress = (event) => {
+      pressed = true;
+      startedAt = Date.now();
+      event.stopPropagation();
+    };
+    const cancelPress = (event) => {
+      pressed = false;
+      event.stopPropagation();
+    };
+    const endPress = (event) => {
+      event.stopPropagation();
+      const wasPressed = pressed;
+      pressed = false;
+      if (!wasPressed) return;
+      if (Date.now() - startedAt > 700) return;
+      removeStickerRef.current?.(stk);
+    };
+    btn.addEventListener('pointerdown', startPress);
+    btn.addEventListener('pointerup', endPress);
+    btn.addEventListener('pointercancel', cancelPress);
+    btn.addEventListener('touchstart', startPress, { passive: true });
+    btn.addEventListener('touchend', (event) => { event.preventDefault(); endPress(event); }, { passive: false });
+    btn.addEventListener('touchcancel', cancelPress, { passive: true });
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      removeStickerRef.current?.(stk);
+    });
+    stk.el.appendChild(btn);
+  }, []);
+
   const selectSticker = useCallback((stk) => {
     bringStickerToFront(stk);
     deselectAllStickers();
     selectedStickerRef.current = stk;
     stk.el.classList.add('stk-selected');
-  }, [bringStickerToFront, deselectAllStickers]);
+    ensureDeleteButton(stk);
+    applyStickerTransform(stk);
+  }, [applyStickerTransform, bringStickerToFront, deselectAllStickers, ensureDeleteButton]);
 
   // ── Remove ──
   const removeSticker = useCallback((stk) => {
@@ -284,6 +346,10 @@ export function useStickerSystem({
       stickerOverlayRef.current.classList.remove('stk-active');
     }
   }, [onItemRemoved]);
+
+  useEffect(() => {
+    removeStickerRef.current = removeSticker;
+  }, [removeSticker]);
 
   // ── Drag / pinch ──
   const setupStickerDrag = useCallback((stk) => {
@@ -776,6 +842,17 @@ export function useStickerSystem({
     mc.style.opacity = String(nsOpacityRef.current / 100);
   }, []);
 
+  // Clear every painted mark in the refine step so the user can start the
+  // refinement over without backing out to the selection screen. Apply
+  // becomes effectively a no-op until they paint something again.
+  const nsClearAllMarks = useCallback(() => {
+    if (!nsMaskRef.current) return;
+    nsMaskRef.current.fill(0);
+    const mc = nsMaskCanvasRef.current;
+    if (mc) mc.getContext('2d').clearRect(0, 0, mc.width, mc.height);
+    if (showToast) showToast('Marks cleared');
+  }, [showToast]);
+
   // ── NS brush panel ──
   const NS_PANEL_W    = 56;
   const NS_HANDLE_MIN = 6,  NS_HANDLE_MAX = 38;
@@ -917,7 +994,10 @@ export function useStickerSystem({
     const ctx = lc.getContext('2d');
     ctx.clearRect(0, 0, lc.width, lc.height);
     const pts = nsLassoPtsRef.current;
-    if (pts.length > 1) {
+    // Pen mode paints the red mask directly as the user drags, so a dashed
+    // boundary overlay would just be visual noise. Loop/magic still need the
+    // dashed preview to show the boundary being drawn.
+    if (nsSelectionModeRef.current !== 'pen' && pts.length > 1) {
       drawMagicSelectionStroke(ctx, {
         points: pts,
         closed: !nsLassoDownRef.current,
@@ -952,7 +1032,10 @@ export function useStickerSystem({
       nsLassoPtsRef.current = [p];
       nsLassoDownRef.current = true;
       nsSetConfirmAvailable(false);
-      if (nsSelectionModeRef.current === 'freehand') {
+      // 'pen' mode is the manual paint-as-you-draw outline (what 'freehand'
+      // used to do). Freehand is now a Loop: collect points only, then fill
+      // the interior of the closed polygon on release.
+      if (nsSelectionModeRef.current === 'pen') {
         const ic = nsImageCanvasRef.current;
         const mc = nsMaskCanvasRef.current;
         if (!ic || !mc) return;
@@ -970,7 +1053,7 @@ export function useStickerSystem({
       const p = getPos(e);
       const prev = nsLassoPtsRef.current[nsLassoPtsRef.current.length - 1];
       nsLassoPtsRef.current.push(p);
-      if (nsSelectionModeRef.current === 'freehand') {
+      if (nsSelectionModeRef.current === 'pen') {
         nsPaintMaskLine(prev, p, nsBrushRRef.current, 1);
         nsRenderOverlay();
       }
@@ -982,8 +1065,22 @@ export function useStickerSystem({
       }
       nsLassoDownRef.current = false;
       const valid = nsLassoPtsRef.current.length >= 5;
-      if (nsSelectionModeRef.current === 'freehand' && valid) {
+      // Pen: mask was painted during drag — go straight to refine.
+      if (nsSelectionModeRef.current === 'pen' && valid) {
         if (nsMaskRef.current) {
+          if (nsLassoRAFRef.current) { cancelAnimationFrame(nsLassoRAFRef.current); nsLassoRAFRef.current = null; }
+          nsPhase2();
+          return;
+        }
+      }
+      // Freehand (Loop): close the path into a polygon, fill interior, go to
+      // refine. This fixes the long-standing "I drew around it but the inside
+      // wasn't filled" confusion — boundaries now act like a lasso.
+      if (nsSelectionModeRef.current === 'freehand' && valid) {
+        const poly = nsLassoPtsRef.current.map(pt => [pt.x, pt.y]);
+        const mask = nsBuildPolyMask(poly);
+        if (mask) {
+          nsMaskRef.current = mask;
           if (nsLassoRAFRef.current) { cancelAnimationFrame(nsLassoRAFRef.current); nsLassoRAFRef.current = null; }
           nsPhase2();
           return;
@@ -1018,7 +1115,7 @@ export function useStickerSystem({
       lc.removeEventListener('touchend',   onEnd);
       document.removeEventListener('mouseup', onEnd);
     };
-  }, [nsPaintMaskCircle, nsPaintMaskLine, nsPhase2, nsRenderOverlay, nsSetConfirmAvailable]);
+  }, [nsBuildPolyMask, nsPaintMaskCircle, nsPaintMaskLine, nsPhase2, nsRenderOverlay, nsSetConfirmAvailable]);
 
   const nsInitShapeEvents = useCallback(() => {
     const lc = nsLassoCanvasRef.current;
@@ -1575,6 +1672,7 @@ export function useStickerSystem({
     nsConfirmLasso,
     nsBackToLasso,
     nsApply,
+    nsClearAllMarks,
     nsSetSelectionMode,
     nsSetRefMode,
     nsHandleOpacityInput,
