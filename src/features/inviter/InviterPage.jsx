@@ -12,6 +12,7 @@ import { useTextTool } from '../editor/hooks/useTextTool';
 import useInviterLayerStack from '../editor/hooks/useInviterLayerStack.js';
 import useMediaTransform from '../editor/hooks/useMediaTransform';
 import { useEditName } from './hooks/useEditName';
+import useStep3Camera from './hooks/useStep3Camera.js';
 import { createInvite, uploadFrame } from '../../lib/api.js';
 import StickerPanel from '../editor/components/StickerPanel';
 import TextToolOverlay from '../editor/components/TextToolOverlay';
@@ -40,6 +41,8 @@ import {
   getAverageImageColor,
   loadImage,
 } from '../editor/utils/canvas.js';
+
+const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
 const STEP3_MODE = {
   LIVE: 'live',
@@ -344,8 +347,8 @@ export default function InviterPage() {
   // which would jump back to editing — that's not what we want here.
   const step3GalleryInputRef = useRef(null);
   const introPhotoFlowRef = useRef(false);
-  const step3VideoRef = useRef(null);
-  const step3StreamRef = useRef(null);
+  // step3 camera refs (videoRef, streamRef, flashTimerRef, hardwareZoomRef)
+  // are now owned by useStep3Camera — accessed via step3Camera.* below.
   const step3RecorderRef = useRef(null);
   const step3RecordChunksRef = useRef([]);
   const step3RecordCanvasRef = useRef(null);
@@ -355,14 +358,12 @@ export default function InviterPage() {
   const step3LongPressTimerRef = useRef(null);
   const step3TapCaptureTimerRef = useRef(null);
   const step3GestureHintTimerRef = useRef(null);
-  const step3FlashTimerRef = useRef(null);
   const step3LastTapAtRef = useRef(0);
   const step3CountdownTimersRef = useRef([]);
   const step3CountdownModeRef = useRef(null);
   const step3PointerIdRef = useRef(null);
   const step3PointerDownRef = useRef(false);
   const step3PointerMovedRef = useRef(false);
-  const step3HardwareZoomRef = useRef(1);
   const s2GalleryImageRef = useRef(null);
   const s2GalleryBackgroundRef = useRef('#F7F5F2');
   const s2GalleryGestureActiveRef = useRef(false);
@@ -397,20 +398,16 @@ export default function InviterPage() {
   const [tmIn, setTmIn] = useState(false);
   const [tmBarMode, setTmBarMode] = useState(null); // 'doodle' | 'magicPen' | null
   const [tmLeftIn, setTmLeftIn] = useState(false);
+  // step3 camera state (cameraReady, cameraIssue, facingMode, flashEnabled,
+  // screenFlashActive, cameraCapabilities, zoomMode) lives in useStep3Camera
+  // — access via step3Camera.* below.
   const [step3Mode, setStep3Mode] = useState(null);
   const [step3PhotoUrl, setStep3PhotoUrl] = useState('');
   const [step3VideoUrl, setStep3VideoUrl] = useState('');
   const [step3Recording, setStep3Recording] = useState(false);
   const [step3RecordingProgress, setStep3RecordingProgress] = useState(1);
-  const [step3CameraReady, setStep3CameraReady] = useState(false);
-  const [step3CameraIssue, setStep3CameraIssue] = useState('');
   const [step3GestureHintVisible, setStep3GestureHintVisible] = useState(false);
-  const [step3FacingMode, setStep3FacingMode] = useState('environment');
-  const [step3FlashEnabled, setStep3FlashEnabled] = useState(false);
-  const [step3ScreenFlashActive, setStep3ScreenFlashActive] = useState(false);
   const [step3TimerSeconds, setStep3TimerSeconds] = useState(0);
-  const [step3ZoomMode, setStep3ZoomMode] = useState(1);
-  const [step3CameraCapabilities, setStep3CameraCapabilities] = useState(STEP3_DEFAULT_CAPABILITIES);
   const [step3CountdownValue, setStep3CountdownValue] = useState(null);
   const [editNameSaveLabel, setEditNameSaveLabel] = useState('Save');
   const [s2GalleryAdjustable, setS2GalleryAdjustable] = useState(false);
@@ -434,12 +431,47 @@ export default function InviterPage() {
     bottomBarOutBeforeStickerDragRef.current = false;
   }, []);
   const s2GalleryTransform = useMediaTransform();
+  // Defined before useStep3Camera since the hook closes over it for photo
+  // capture composition.
+  const getCanvasSize = useCallback(() => {
+    const canvas = canvasRef.current;
+    return {
+      width: canvas?.width || 414,
+      height: canvas?.height || 736,
+    };
+  }, []);
+
+  // Note: initialMirror seeds from 'environment' since useStep3Camera owns
+  // facingMode internally now. The hook flips the mirror via setMirror() when
+  // the user toggles to front camera.
   const step3CameraTransform = useMediaTransform({
-    initialMirror: step3FacingMode === 'user',
+    initialMirror: false,
     minScale: STEP3_MIN_SOFTWARE_SCALE,
     maxScale: STEP3_MAX_SOFTWARE_SCALE,
     maxOffsetX: Infinity,
     maxOffsetY: Infinity,
+  });
+
+  // Camera lifecycle for step3 (preview/capture screen). Owns the stream,
+  // capabilities, zoom/flash/facing state, and the screen-flash timing.
+  // Recording, countdown, pointer gestures, and blob composition stay below
+  // because they cross concerns with the frame editor.
+  const step3Camera = useStep3Camera({
+    cameraTransform: step3CameraTransform,
+    getCanvasSize,
+    showToast,
+    defaultCapabilities: STEP3_DEFAULT_CAPABILITIES,
+    flashWarmupMs: STEP3_FLASH_WARMUP_MS,
+    flashFadeMs: STEP3_FLASH_FADE_MS,
+    zoomPresets: [0.5, 1, 2],
+    clampZoom: clampStep3Zoom,
+    roundZoom: roundStep3Zoom,
+    getCameraIssue: getStep3CameraIssue,
+    requestCameraStream: requestStep3CameraStream,
+    getTrackCapabilities: getStep3TrackCapabilities,
+    logCameraSettings: logStep3CameraSettings,
+    waitForVideoMetadata,
+    delay,
   });
   const drawS2GalleryBase = useCallback((targetCtx) => {
     const image = s2GalleryImageRef.current;
@@ -555,14 +587,41 @@ export default function InviterPage() {
     () => filterOrderedToolIds(orderedToolIds, RETAKE_REVIEW_TOOL_IDS),
     [orderedToolIds]
   );
-  const step3ZoomOptions = useMemo(() => {
-    if (!step3CameraCapabilities.zoom) return [];
-    return [0.5, 1, 2].filter(
-      zoom => step3CameraCapabilities.zoomMin <= zoom && step3CameraCapabilities.zoomMax >= zoom
-    );
-  }, [step3CameraCapabilities]);
-  const step3UsesHardwareTorch = step3FacingMode === 'environment' && step3CameraCapabilities.torch;
-  const step3UsesScreenFlash = step3FlashEnabled && !step3UsesHardwareTorch;
+  // The rest of InviterPage references step3* directly. Rather than rewrite
+  // hundreds of call sites in one PR, alias the hook's API back onto the old
+  // identifiers. The hook still owns lifecycle/state — these are just
+  // forwarders. Future PRs can collapse the aliases by inlining `step3Camera.*`.
+  const step3VideoRef = step3Camera.videoRef;
+  const step3StreamRef = step3Camera.streamRef;
+  const step3FlashTimerRef = step3Camera.flashTimerRef;
+  const step3HardwareZoomRef = step3Camera.hardwareZoomRef;
+  const step3CameraReady = step3Camera.cameraReady;
+  const step3CameraIssue = step3Camera.cameraIssue;
+  const step3FacingMode = step3Camera.facingMode;
+  const step3FlashEnabled = step3Camera.flashEnabled;
+  const step3ScreenFlashActive = step3Camera.screenFlashActive;
+  const step3CameraCapabilities = step3Camera.cameraCapabilities;
+  const step3ZoomMode = step3Camera.zoomMode;
+  const step3ZoomOptions = step3Camera.zoomOptions;
+  const step3UsesHardwareTorch = step3Camera.usesHardwareTorch;
+  const step3UsesScreenFlash = step3Camera.usesScreenFlash;
+  const setStep3FacingMode = step3Camera.setFacingMode;
+  const setStep3FlashEnabled = step3Camera.setFlashEnabled;
+  const setStep3ScreenFlashActive = step3Camera.setScreenFlashActive;
+  const setStep3CameraCapabilities = step3Camera.setCameraCapabilities;
+  const setStep3ZoomMode = step3Camera.setZoomMode;
+  const setStep3CameraIssue = step3Camera.setCameraIssue;
+  const setStep3CameraReady = step3Camera.setCameraReady;
+  const startStep3Camera = step3Camera.startCamera;
+  const stopStep3Camera = step3Camera.stopCamera;
+  const applyStep3HardwareZoom = step3Camera.applyHardwareZoom;
+  const resetStep3CameraTransform = step3Camera.resetCameraTransform;
+  const handleStep3FlipCamera = step3Camera.flipCamera;
+  const warmStep3ScreenFlash = step3Camera.warmScreenFlash;
+  const releaseStep3ScreenFlash = step3Camera.releaseScreenFlash;
+  const captureStep3CameraPhoto = step3Camera.capturePhoto;
+  const handleStep3FlashToggle = step3Camera.toggleFlash;
+  const handleStep3Zoom = step3Camera.applyHardwareZoom;
 
   const {
     editNameVisible,
@@ -743,14 +802,6 @@ export default function InviterPage() {
     return drawS2GalleryBase(targetCtx);
   }, [drawS2GalleryBase]);
 
-  const getCanvasSize = useCallback(() => {
-    const canvas = canvasRef.current;
-    return {
-      width: canvas?.width || 414,
-      height: canvas?.height || 736,
-    };
-  }, []);
-
   const renderS2GalleryPlacement = useCallback(() => {
     const galleryCanvas = s2GalleryCanvasRef.current;
     const galleryCtx = galleryCanvas?.getContext('2d');
@@ -895,7 +946,6 @@ export default function InviterPage() {
       mainUndoStackRef, mainRedoStackRef, toolUndoStackRef, toolRedoStackRef, sessionEntrySnapRef, stickerSys]);
 
   // ── Editor enter/exit ──
-  const delay = (ms) => new Promise(r => setTimeout(r, ms));
 
   const hideStep3GestureHint = useCallback(() => {
     clearTimeout(step3GestureHintTimerRef.current);
@@ -1042,76 +1092,8 @@ export default function InviterPage() {
     }
   }, []);
 
-  const stopStep3Camera = useCallback(() => {
-    clearTimeout(step3FlashTimerRef.current);
-    step3FlashTimerRef.current = null;
-    if (step3StreamRef.current) {
-      step3StreamRef.current.getTracks().forEach(track => track.stop());
-      step3StreamRef.current = null;
-    }
-    if (step3VideoRef.current) step3VideoRef.current.srcObject = null;
-    step3HardwareZoomRef.current = 1;
-    setStep3CameraReady(false);
-    setStep3FlashEnabled(false);
-    setStep3ScreenFlashActive(false);
-    setStep3CameraCapabilities(STEP3_DEFAULT_CAPABILITIES);
-  }, []);
-
-  const startStep3Camera = useCallback(async (facingMode = step3FacingMode) => {
-    stopStep3Camera();
-    setStep3CameraReady(false);
-    setStep3CameraIssue('');
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      const issue = getStep3CameraIssue();
-      setStep3CameraIssue(issue.fallback);
-      showToast(issue.toast);
-      return false;
-    }
-
-    try {
-      const stream = await requestStep3CameraStream(facingMode);
-      step3StreamRef.current = stream;
-      if (step3VideoRef.current) {
-        const video = step3VideoRef.current;
-        video.muted = true;
-        video.playsInline = true;
-        video.autoplay = true;
-        video.srcObject = stream;
-        await waitForVideoMetadata(video);
-        await video.play();
-      } else {
-        throw new Error('Camera view not mounted');
-      }
-      const [track] = stream.getVideoTracks();
-      const capabilities = getStep3TrackCapabilities(track);
-      let startingZoom = 1;
-      if (capabilities.zoom && track?.applyConstraints) {
-        startingZoom = capabilities.zoomMin;
-        try {
-          await track.applyConstraints({ advanced: [{ zoom: startingZoom }] });
-        } catch (err) {
-          console.warn('[step3] Minimum hardware zoom unavailable:', err);
-          capabilities.zoom = false;
-          startingZoom = 1;
-        }
-      }
-      logStep3CameraSettings(track, step3VideoRef.current);
-      step3HardwareZoomRef.current = startingZoom;
-      setStep3CameraCapabilities(capabilities);
-      setStep3ZoomMode(roundStep3Zoom(startingZoom));
-      step3CameraTransform.reset(facingMode === 'user');
-      setStep3CameraIssue('');
-      setStep3CameraReady(true);
-      return true;
-    } catch (err) {
-      console.warn('[step3] Camera unavailable:', err?.name, err?.message);
-      stopStep3Camera();
-      const issue = getStep3CameraIssue(err);
-      setStep3CameraIssue(issue.fallback);
-      showToast(issue.toast);
-      return false;
-    }
-  }, [showToast, step3CameraTransform, step3FacingMode, stopStep3Camera]);
+  // stopStep3Camera + startStep3Camera moved into useStep3Camera.
+  // Aliased as `stopStep3Camera` / `startStep3Camera` near the hook call.
 
   const buildFrameDataUrl = useCallback(async () => {
     if (activeToolRef.current) exitCurrentTool(true);
@@ -1124,16 +1106,7 @@ export default function InviterPage() {
     return out.toDataURL('image/png');
   }, [exitCurrentTool, getCanvasSize, layerStack]);
 
-  const captureStep3CameraPhoto = useCallback(async () => {
-    const video = step3VideoRef.current;
-    if (!video || video.readyState < 2) throw new Error('Camera is not ready');
-    const { width, height } = getCanvasSize();
-    const out = document.createElement('canvas');
-    out.width = width;
-    out.height = height;
-    drawMediaCoverWithTransform(out.getContext('2d'), video, width, height, step3CameraTransform.transformRef.current);
-    return out.toDataURL('image/jpeg', 0.92);
-  }, [getCanvasSize, step3CameraTransform.transformRef]);
+  // captureStep3CameraPhoto moved into useStep3Camera. Aliased above.
 
   const buildStep3PhotoBlob = useCallback(async () => {
     if (!step3PhotoUrl) throw new Error('No photo captured');
@@ -1410,53 +1383,9 @@ export default function InviterPage() {
     step3CountdownTimersRef.current = [setTimeout(tick, 1000)];
   }, [cancelStep3Countdown, step3TimerSeconds]);
 
-  const applyStep3HardwareZoom = useCallback(async (zoom) => {
-    if (!step3CameraCapabilities.zoom) return;
-    const [track] = step3StreamRef.current?.getVideoTracks?.() || [];
-    if (!track?.applyConstraints) return;
-    const nextZoom = clampStep3Zoom(
-      zoom,
-      step3CameraCapabilities.zoomMin,
-      step3CameraCapabilities.zoomMax
-    );
-    try {
-      await track.applyConstraints({ advanced: [{ zoom: nextZoom }] });
-      step3HardwareZoomRef.current = nextZoom;
-      setStep3ZoomMode(roundStep3Zoom(nextZoom));
-    } catch (err) {
-      console.warn('[step3] Hardware zoom unavailable:', err);
-    }
-  }, [step3CameraCapabilities]);
-
-  const resetStep3CameraTransform = useCallback(async () => {
-    await applyStep3HardwareZoom(step3CameraCapabilities.zoomMin);
-    step3CameraTransform.reset(step3FacingMode === 'user');
-  }, [applyStep3HardwareZoom, step3CameraCapabilities.zoomMin, step3CameraTransform, step3FacingMode]);
-
-  const handleStep3FlipCamera = useCallback(async () => {
-    const next = step3FacingMode === 'environment' ? 'user' : 'environment';
-    setStep3FacingMode(next);
-    step3CameraTransform.setMirror(next === 'user');
-    setStep3FlashEnabled(false);
-    setStep3ScreenFlashActive(false);
-    await startStep3Camera(next);
-  }, [startStep3Camera, step3CameraTransform, step3FacingMode]);
-
-  const warmStep3ScreenFlash = useCallback(async () => {
-    if (!step3UsesScreenFlash) return;
-    clearTimeout(step3FlashTimerRef.current);
-    step3FlashTimerRef.current = null;
-    setStep3ScreenFlashActive(true);
-    await delay(STEP3_FLASH_WARMUP_MS);
-  }, [step3UsesScreenFlash]);
-
-  const releaseStep3ScreenFlash = useCallback(() => {
-    clearTimeout(step3FlashTimerRef.current);
-    step3FlashTimerRef.current = setTimeout(() => {
-      setStep3ScreenFlashActive(false);
-      step3FlashTimerRef.current = null;
-    }, STEP3_FLASH_FADE_MS);
-  }, []);
+  // applyStep3HardwareZoom / resetStep3CameraTransform / handleStep3FlipCamera /
+  // warmStep3ScreenFlash / releaseStep3ScreenFlash all moved into
+  // useStep3Camera and aliased near the hook call.
 
   const completeStep3PhotoCapture = useCallback(async () => {
     try {
@@ -1885,22 +1814,7 @@ export default function InviterPage() {
     handleStep3ShareRetake(nextName);
   }, [handleStep3ShareRetake, saveEditName]);
 
-  const handleStep3FlashToggle = useCallback(async () => {
-    if (!step3CameraReady) return;
-    const [track] = step3StreamRef.current?.getVideoTracks?.() || [];
-    const next = !step3FlashEnabled;
-    if (step3UsesHardwareTorch && track?.applyConstraints) {
-      try {
-        await track.applyConstraints({ advanced: [{ torch: next }] });
-      } catch (err) {
-        console.warn('[step3] Torch unavailable, using screen flash:', err);
-        setStep3CameraCapabilities(prev => ({ ...prev, torch: false }));
-        showToast('Using screen flash');
-      }
-    }
-    setStep3FlashEnabled(next);
-    if (!next) setStep3ScreenFlashActive(false);
-  }, [showToast, step3CameraReady, step3FlashEnabled, step3UsesHardwareTorch]);
+  // handleStep3FlashToggle moved into useStep3Camera (toggleFlash). Aliased above.
 
   const handleStep3TimerToggle = useCallback(() => {
     const index = STEP3_TIMER_STEPS.indexOf(step3TimerSeconds);
@@ -1909,9 +1823,7 @@ export default function InviterPage() {
     showToast(next ? `${next}s timer` : 'Timer off');
   }, [showToast, step3TimerSeconds]);
 
-  const handleStep3Zoom = useCallback(async (zoom) => {
-    await applyStep3HardwareZoom(zoom);
-  }, [applyStep3HardwareZoom]);
+  // handleStep3Zoom is just `step3Camera.applyHardwareZoom` — aliased above.
 
   const canHandleS2GalleryGesture = useCallback(() => (
     s2GalleryAdjustable

@@ -339,6 +339,28 @@ CSS 레이어 순서:
 
 ## 7. 리팩토링 계획 (Refactor)
 
+### 7-0. 진행 현황 (Status)
+
+| 단계 | 상태 | 메모 |
+|---|---|---|
+| **Phase D-부분: `useStep3Camera` 추출** | ✅ **완료** (`refactor/use-step3-camera`) | step3 카메라 라이프사이클(stream/flash/zoom/facing/capture) 268줄 분리. InviterPage 88줄 감소. 호환 alias로 호출처 미수정 — 점진적 inline 가능 |
+| Phase A (스티커 분할) | ⏸ 보류 — UX iteration 안정 후 |
+| Phase B (Inviter 플로우 분할) | ⏸ 보류 |
+| Phase C (Inviter↔Invitee 공통화) | ⏸ 보류 |
+| Phase D-전체 (`useRetakeCamera` 분할) | ⏸ Capacitor 카메라 교체 직전에 |
+| Phase E (useCanvasDrawing 분할) | ⏸ 안정적, 우선순위 낮음 |
+| Phase F (공통 정비) | ⏸ |
+
+> **현재 판단**: 활발한 UX iteration 중이라 큰 리팩토링은 비추천. Phase D-부분만 끝낸 상태.
+> Step3 관련 새 기능 추가 시 `useStep3Camera`만 손대면 됨.
+
+### 7-A. `useStep3Camera` 후속 정리 (선택)
+지금은 alias 블록(30줄)으로 호환 유지 중. 시간 날 때 InviterPage 내 호출처를
+`step3Camera.videoRef` 식으로 직접 사용하도록 점진적 inline 가능 → alias 블록 제거,
+InviterPage 추가 -30줄.
+
+
+
 ### 7-1. 왜 지금 해야 하나
 현재 상위 6개 파일 줄 수:
 
