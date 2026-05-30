@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import Surface from './Surface.jsx';
 
-export default function GlassSurface({ id, className = '', children, ...props }) {
+const GlassSurface = forwardRef(function GlassSurface({ id, className = '', children, ...props }, ref) {
   return (
-    <Surface id={id} variant="glass" className={className} {...props}>
+    <Surface ref={ref} id={id} variant="glass" className={className} {...props}>
       {children}
     </Surface>
   );
-}
+});
+
+export default GlassSurface;

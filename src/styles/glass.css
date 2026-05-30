@@ -83,6 +83,35 @@
   z-index: var(--z-frame-scrim);
 }
 
+#frameContainer:focus {
+  outline: none;
+}
+
+.canvas-paste-target {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  caret-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  z-index: 0;
+}
+
+.canvas-paste-target::selection {
+  background: transparent;
+}
+
+#frameContainer[contenteditable='true'] {
+  caret-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .tool-icon-frame-close .tool-icon-svg,
 .tool-icon-frame-check .tool-icon-svg,
 .tool-icon-frame-undo .tool-icon-svg,

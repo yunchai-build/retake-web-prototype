@@ -113,6 +113,15 @@ export default function ToolIcon({ type }) {
         </svg>
       );
       break;
+    case 'layers':
+      icon = (
+        <svg {...iconProps}>
+          <path d="M12 3.75 20.25 8 12 12.25 3.75 8 12 3.75Z" />
+          <path d="m20.25 12-8.25 4.25L3.75 12" />
+          <path d="m20.25 16-8.25 4.25L3.75 16" />
+        </svg>
+      );
+      break;
     case 'flash':
       icon = (
         <svg {...iconProps} fill="currentColor" stroke="none">

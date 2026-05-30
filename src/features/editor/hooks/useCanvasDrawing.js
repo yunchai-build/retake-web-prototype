@@ -186,6 +186,8 @@ export function useCanvasDrawing({
   onInitialIntro,
   onCommitStroke,
   onCommitCanvasFill,
+  onCanvasInteractionStart,
+  onCanvasInteractionEnd,
 }) {
   const scratchCanvasRef = useRef(null);
   const scratchCtxRef = useRef(null);
@@ -681,6 +683,7 @@ export function useCanvasDrawing({
       isDrawingRef.current = false;
       fillPressRef.current = null;
       strokeBaseDataRef.current = null;
+      onCanvasInteractionEnd?.();
       if (scratchCtxRef.current && scratchCanvasRef.current) {
         scratchCtxRef.current.clearRect(0, 0, scratchCanvasRef.current.width, scratchCanvasRef.current.height);
       }
@@ -776,6 +779,7 @@ export function useCanvasDrawing({
     const onMouseDown = (e) => {
       stickerSys.deselectAllStickers?.();
       if (!activeToolRef.current) return;
+      onCanvasInteractionStart?.();
       const p = getXY(e);
       const magicMode = magicPenModeRef?.current || 'freehand';
       if (activeToolRef.current === 'magicPen' && magicMode === 'magic') {
@@ -829,26 +833,31 @@ export function useCanvasDrawing({
     const onMouseUp = (e) => {
       if (activeToolRef.current === 'magicPen' && (magicPenModeRef?.current || 'freehand') === 'magic') {
         endMagicSelectionPointer(e);
+        onCanvasInteractionEnd?.();
       } else if (shapeDraggingRef.current) {
         const p = getXYFromClient(e.clientX, e.clientY);
         if (commitMagicPenShape(shapeStartXRef.current, shapeStartYRef.current, p.x, p.y)) pushHistory();
         shapeDraggingRef.current = false;
+        onCanvasInteractionEnd?.();
       } else if (isDrawingRef.current) {
         clearFillLongPress();
         strokeBaseDataRef.current = null;
         if (commitCurrentStroke()) pushHistory();
         isDrawingRef.current = false;
+        onCanvasInteractionEnd?.();
       }
     };
     const onMouseLeave = () => {
       if (activeToolRef.current === 'magicPen' && (magicPenModeRef?.current || 'freehand') === 'magic') {
         endMagicSelectionPointer();
+        onCanvasInteractionEnd?.();
       }
       if (isDrawingRef.current) {
         clearFillLongPress();
         strokeBaseDataRef.current = null;
         if (commitCurrentStroke()) pushHistory();
         isDrawingRef.current = false;
+        onCanvasInteractionEnd?.();
       }
       if (brushCursorRef.current) brushCursorRef.current.style.display = 'none';
     };
@@ -868,6 +877,7 @@ export function useCanvasDrawing({
     const onTouchStart = (e) => {
       stickerSys.deselectAllStickers?.();
       if (!activeToolRef.current) return; e.preventDefault();
+      onCanvasInteractionStart?.();
       const p = getXY(e);
       const magicMode = magicPenModeRef?.current || 'freehand';
       if (activeToolRef.current === 'magicPen' && magicMode === 'magic') {
@@ -914,16 +924,19 @@ export function useCanvasDrawing({
     const onTouchEnd = (e) => {
       if (activeToolRef.current === 'magicPen' && (magicPenModeRef?.current || 'freehand') === 'magic') {
         endMagicSelectionPointer(e);
+        onCanvasInteractionEnd?.();
       } else if (shapeDraggingRef.current) {
         const t = e.changedTouches[0];
         const p = t ? getXYFromClient(t.clientX, t.clientY) : { x: shapeStartXRef.current, y: shapeStartYRef.current };
         if (commitMagicPenShape(shapeStartXRef.current, shapeStartYRef.current, p.x, p.y)) pushHistory();
         shapeDraggingRef.current = false;
+        onCanvasInteractionEnd?.();
       } else if (isDrawingRef.current) {
         clearFillLongPress();
         strokeBaseDataRef.current = null;
         if (commitCurrentStroke()) pushHistory();
         isDrawingRef.current = false;
+        onCanvasInteractionEnd?.();
       }
     };
 
@@ -970,10 +983,12 @@ export function useCanvasDrawing({
     const onDocTrackMouseUp = (e) => {
       if (activeToolRef.current === 'magicPen' && (magicPenModeRef?.current || 'freehand') === 'magic') {
         endMagicSelectionPointer(e);
+        onCanvasInteractionEnd?.();
       } else if (shapeDraggingRef.current) {
         const p = getXYFromClient(e.clientX, e.clientY);
         if (commitMagicPenShape(shapeStartXRef.current, shapeStartYRef.current, p.x, p.y)) pushHistory();
         shapeDraggingRef.current = false;
+        onCanvasInteractionEnd?.();
       }
       if (trackDraggingRef.current) endTrackDrag();
     };
@@ -1002,11 +1017,13 @@ export function useCanvasDrawing({
     const onDocTouchEnd = (e) => {
       if (activeToolRef.current === 'magicPen' && (magicPenModeRef?.current || 'freehand') === 'magic') {
         endMagicSelectionPointer(e);
+        onCanvasInteractionEnd?.();
       } else if (shapeDraggingRef.current) {
         const t = e.changedTouches[0];
         const p = t ? getXYFromClient(t.clientX, t.clientY) : { x: shapeStartXRef.current, y: shapeStartYRef.current };
         if (commitMagicPenShape(shapeStartXRef.current, shapeStartYRef.current, p.x, p.y)) pushHistory();
         shapeDraggingRef.current = false;
+        onCanvasInteractionEnd?.();
       }
       if (trackDraggingRef.current) endTrackDrag();
     };

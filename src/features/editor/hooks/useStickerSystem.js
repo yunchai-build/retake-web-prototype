@@ -9,6 +9,7 @@ import {
   pointsFromTouchList,
   updateTransformGesture,
 } from '../utils/transformGesture.js';
+import { getClipboardImage, hasClipboardImage, isEditablePasteTarget } from '../utils/clipboard.js';
 
 // ── Emoji categories ──
 export const EMOJI_CATS = [
@@ -148,6 +149,7 @@ export function useStickerSystem({
   onItemTouched,
   onItemRemoved,
   onItemsCleared,
+  onEditImageItem,
 }) {
   // ── DOM refs (sticker panel) ──
   const stickerOverlayRef = useRef(null);
@@ -185,6 +187,7 @@ export function useStickerSystem({
   const activeCatIdRef     = useRef('all');
   const onItemDragStartRef = useRef(onItemDragStart);
   const onItemDragEndRef   = useRef(onItemDragEnd);
+  const onEditImageItemRef = useRef(onEditImageItem);
 
   // ── NS screen state refs ──
   const nsImageRef     = useRef(null);
@@ -220,7 +223,8 @@ export function useStickerSystem({
   useEffect(() => {
     onItemDragStartRef.current = onItemDragStart;
     onItemDragEndRef.current = onItemDragEnd;
-  }, [onItemDragStart, onItemDragEnd]);
+    onEditImageItemRef.current = onEditImageItem;
+  }, [onEditImageItem, onItemDragStart, onItemDragEnd]);
 
   useEffect(() => {
     const host = overlayParentRef?.current;
@@ -292,6 +296,7 @@ export function useStickerSystem({
     let gesture=null;
     let gestureMode=null;
     let interactionActive=false;
+    let movedDuringGesture=false;
     function beginInteraction() {
       if (interactionActive) return;
       interactionActive = true;
@@ -314,6 +319,7 @@ export function useStickerSystem({
         scaleFactor: getGestureScaleFactor(),
       });
       gestureMode = points.length >= 2 ? 'two-pointer' : points.length === 1 ? 'single-pointer' : null;
+      movedDuringGesture = false;
       dragging = gestureMode === 'single-pointer';
       el.classList.toggle('stk-dragging', dragging);
       if (dragging) showBin();
@@ -329,6 +335,7 @@ export function useStickerSystem({
       if (!result.moved || !result.transform) return false;
       applyTransformToSticker(stk, result.transform);
       applyStickerTransform(stk);
+      movedDuringGesture = true;
       if (dragging) updateBinHighlight();
       return true;
     }
@@ -396,7 +403,10 @@ export function useStickerSystem({
         el.classList.remove('stk-dragging');
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
-        if (checkOverTrash()) doDeleteIntoTrash();
+        if (!movedDuringGesture && stk.type !== 'text') {
+          hideBin();
+          onEditImageItemRef.current?.(stk);
+        } else if (checkOverTrash()) doDeleteIntoTrash();
         else {
           hideBin();
           onItemTouched?.(stk.layerId);
@@ -435,7 +445,10 @@ export function useStickerSystem({
         gesture=null;
         gestureMode=null;
         el.classList.remove('stk-dragging');
-        if (checkOverTrash()) doDeleteIntoTrash();
+        if (!movedDuringGesture && stk.type !== 'text') {
+          hideBin();
+          onEditImageItemRef.current?.(stk);
+        } else if (checkOverTrash()) doDeleteIntoTrash();
         else {
           hideBin();
           onItemTouched?.(stk.layerId);
@@ -540,6 +553,38 @@ export function useStickerSystem({
     el.addEventListener('click', ev => { ev.stopPropagation(); selectSticker(stk); });
     setupStickerDrag(stk);
   }, [ctxRef, getPlacedItemHost, selectSticker, setupStickerDrag, onItemPlaced, onItemRemoved]);
+
+  const replaceImageItem = useCallback((item, result = {}) => {
+    if (!item || item.type === 'text' || !result.src) return false;
+    const img = item.el?.querySelector?.('img');
+    if (!img) return false;
+
+    const previousBaseW = item.baseW || item.el.offsetWidth || 120;
+    const previousBaseH = item.baseH || item.el.offsetHeight || previousBaseW;
+    const centerX = item.x + previousBaseW / 2;
+    const centerY = item.y + previousBaseH / 2;
+    const sourceW = result.sourceWidth || result.width || previousBaseW;
+    const sourceH = result.sourceHeight || result.height || previousBaseH;
+    const scaleX = previousBaseW / sourceW;
+    const scaleY = previousBaseH / sourceH;
+    const nextBaseW = Math.max(1, Math.round((result.width || sourceW) * scaleX));
+    const nextBaseH = Math.max(1, Math.round((result.height || sourceH) * scaleY));
+
+    item.src = result.src;
+    item.image = null;
+    item.baseW = nextBaseW;
+    item.baseH = nextBaseH;
+    item.x = Math.round(centerX - nextBaseW / 2);
+    item.y = Math.round(centerY - nextBaseH / 2);
+
+    img.src = result.src;
+    item.el.style.left = `${item.x}px`;
+    item.el.style.top = `${item.y}px`;
+    item.el.style.width = `${nextBaseW}px`;
+    item.el.style.height = `${nextBaseH}px`;
+    applyStickerTransform(item);
+    return true;
+  }, [applyStickerTransform]);
 
   // ── Place text ──
   const placeText = useCallback((text, font, size, color, align, wrapWidth = 280, opacity = 1) => {
@@ -1485,46 +1530,41 @@ export function useStickerSystem({
     buildEmojiGrid();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Paste (Ctrl/Cmd+V) ──
+  const pasteClipboardImage = useCallback(async (clipboardData, options = {}) => {
+    const image = await getClipboardImage(clipboardData);
+    if (!image?.src) return false;
+
+    stickerLibraryRef.current.push({ id: Date.now(), src: image.src });
+    setStickerLibrary([...stickerLibraryRef.current]);
+
+    const saveOnly = options.saveOnly ?? stickerPanelVisible;
+    if (saveOnly) {
+      stickerTabRef.current = 'mystickers';
+      setStickerTab('mystickers');
+      renderStickerContent();
+      showToast?.('Sticker saved!');
+    } else {
+      placeSticker(image.src, image.width, image.height);
+      showToast?.('Sticker added!');
+    }
+
+    return true;
+  }, [placeSticker, renderStickerContent, showToast, stickerPanelVisible]);
+
+  // ── Paste (Ctrl/Cmd+V or canvas paste) ──
   useEffect(() => {
     const handlePaste = async (e) => {
-      const active = document.activeElement;
-      if (active && (active.isContentEditable || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      let file = null;
-      for (const item of items) { if (item.type.startsWith('image/')) { file = item.getAsFile(); break; } }
-      if (!file) return;
+      if (isEditablePasteTarget(e.target)) return;
+      if (!e.clipboardData) return;
+      if (!hasClipboardImage(e.clipboardData)) return;
       e.preventDefault();
-      const src = await new Promise(res => {
-        const img = new Image(); const url = URL.createObjectURL(file);
-        img.onload = () => {
-          const c = document.createElement('canvas');
-          c.width = img.naturalWidth; c.height = img.naturalHeight;
-          c.getContext('2d').drawImage(img, 0, 0);
-          URL.revokeObjectURL(url);
-          res(c.toDataURL('image/png'));
-        };
-        img.onerror = () => { URL.revokeObjectURL(url); res(null); };
-        img.src = url;
-      });
-      if (!src) return;
-      stickerLibraryRef.current.push({ id: Date.now(), src });
-      setStickerLibrary([...stickerLibraryRef.current]);
-      const panelOpen = stickerPanelVisible;
-      if (panelOpen) {
-        stickerTabRef.current = 'mystickers';
-        setStickerTab('mystickers');
-        renderStickerContent();
-        if (showToast) showToast('Sticker saved!');
-      } else {
-        placeSticker(src);
-        if (showToast) showToast('Sticker added!');
-      }
+
+      const pasted = await pasteClipboardImage(e.clipboardData);
+      if (!pasted) return;
     };
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
-  }, [stickerPanelVisible, placeSticker, renderStickerContent, showToast]);
+  }, [pasteClipboardImage]);
 
   return {
     // Panel refs
@@ -1582,6 +1622,8 @@ export function useStickerSystem({
     placeSticker,
     placePhoto,
     placeText,
+    replaceImageItem,
+    pasteClipboardImage,
     bringStickerToFront,
     deselectAllStickers,
     commitStickersToCanvas,

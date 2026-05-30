@@ -169,6 +169,11 @@ export default function InviteePage() {
     onItemTouched: layerStack.touchLayer,
     onItemRemoved: layerStack.removeLayer,
   });
+  const handleCanvasPaste = useCallback(async (event) => {
+    if (!event.clipboardData) return;
+    event.preventDefault();
+    await stickerSys.pasteClipboardImage(event.clipboardData, { saveOnly: false });
+  }, [stickerSys]);
   const createInviteeSnapshot = useCallback(() => ({
     canvas: (() => {
       try { return canvasRef.current?.toDataURL() || null; } catch { return null; }
@@ -1009,6 +1014,7 @@ export default function InviteePage() {
         frameElRef={frameElRef}
         showCheckerBg={false}
         frameScrimVisible
+        onPaste={handleCanvasPaste}
       >
         <RetakeCameraStage
           mode={camera.mode}

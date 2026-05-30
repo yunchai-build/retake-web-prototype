@@ -13,6 +13,11 @@ const TOOL_META = {
 };
 
 const DOCK_ORDER = ['doodle', 'text', 'magicPen', 'download', 'photo', 'stickers'];
+const TOOL_GROUPS = [
+  { id: 'marking', label: 'Marking tools', toolIds: ['doodle', 'text'] },
+  { id: 'media', label: 'Media tools', toolIds: ['photo', 'stickers'] },
+  { id: 'output', label: 'Advanced and save tools', toolIds: ['magicPen', 'download'] },
+];
 
 export default function VerticalToolbar({
   visible,
@@ -46,6 +51,27 @@ export default function VerticalToolbar({
     if (toolId === 'photo') return Boolean(onPhoto);
     return allowedTools.has(toolId);
   });
+  const dockTools = new Set(dockToolIds);
+
+  const renderToolButton = (toolId) => {
+    if (!dockTools.has(toolId)) return null;
+
+    const meta = TOOL_META[toolId];
+    if (!meta) return null;
+
+    return (
+      <ToolbarToolButton
+        key={toolId}
+        toolId={toolId}
+        {...meta}
+        active={meta.activeTool === activeTool}
+        hidden={collapsed && ['magicPen', 'download'].includes(toolId)}
+        onClick={handlers[toolId]}
+        onMouseEnter={onToolMouseEnter}
+        onMouseLeave={onToolMouseLeave}
+      />
+    );
+  };
 
   return (
     <GlassSurface
@@ -54,31 +80,31 @@ export default function VerticalToolbar({
       onPointerDown={onInteraction}
       onFocus={onInteraction}
     >
-      {dockToolIds.map((toolId) => {
-        const meta = TOOL_META[toolId];
-        if (!meta) return null;
+      {TOOL_GROUPS.map((group) => {
+        const groupTools = group.toolIds.filter(toolId => dockTools.has(toolId));
+        if (groupTools.length === 0) return null;
 
         return (
-          <ToolbarToolButton
-            key={toolId}
-            toolId={toolId}
-            {...meta}
-            active={meta.activeTool === activeTool}
-            hidden={collapsed && ['magicPen', 'download'].includes(toolId)}
-            onClick={handlers[toolId]}
-            onMouseEnter={onToolMouseEnter}
-            onMouseLeave={onToolMouseLeave}
-          />
+          <div
+            key={group.id}
+            className={`s6-tool-group s6-tool-group--${group.id}`}
+            role="group"
+            aria-label={group.label}
+          >
+            {groupTools.map(renderToolButton)}
+          </div>
         );
       })}
 
-      <GlassIconButton
-        contained={false}
-        icon="plus"
-        label="Toggle toolbar"
-        className="s6-tools-chevron"
-        onClick={onToggle}
-      />
+      <div className="s6-tool-group s6-tool-group--toggle" role="group" aria-label="Toolbar options">
+        <GlassIconButton
+          contained={false}
+          icon="plus"
+          label="Toggle toolbar"
+          className="s6-tools-chevron"
+          onClick={onToggle}
+        />
+      </div>
     </GlassSurface>
   );
 }

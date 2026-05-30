@@ -17,6 +17,7 @@ const serverConfig = {
   host: '0.0.0.0',
   port: 5174,
   strictPort: true,
+  allowedHosts: ['.trycloudflare.com'],
   ...(useLocalHttps ? {
     https: {
       key: fs.readFileSync(httpsKeyPath),

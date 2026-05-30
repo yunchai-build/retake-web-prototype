@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 
 const SURFACE_VARIANTS = {
   glass: 'glass-surface',
@@ -7,21 +7,23 @@ const SURFACE_VARIANTS = {
   plain: '',
 };
 
-export default function Surface({
+const Surface = forwardRef(function Surface({
   as: Component = 'div',
   variant = 'plain',
   className = '',
   children,
   ...props
-}) {
+}, ref) {
   const classes = [
     SURFACE_VARIANTS[variant] ?? '',
     className,
   ].filter(Boolean).join(' ');
 
   return (
-    <Component className={classes} {...props}>
+    <Component ref={ref} className={classes} {...props}>
       {children}
     </Component>
   );
-}
+});
+
+export default Surface;

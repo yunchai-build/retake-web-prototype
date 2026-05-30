@@ -29,7 +29,7 @@ const SP_TABS = [
   },
 ];
 
-export default function StickerPanel({ sys }) {
+export default function StickerPanel({ sys, variant = 'default', onMakeSticker }) {
   const {
     stickerPanelVisible,
     newStickerVisible,
@@ -74,6 +74,7 @@ export default function StickerPanel({ sys }) {
     nsSetSelectionMode,
     nsSetRefMode,
     nsHandleOpacityInput,
+    placeSticker,
   } = sys;
 
   const selectionHint = {
@@ -92,11 +93,39 @@ export default function StickerPanel({ sys }) {
       ? 'Detecting sticker'
       : 'Confirm sticker';
   const handleNsCheck = nsPhase === 'refine' ? nsApply : nsConfirmLasso;
+  const isInviterDrawer = variant === 'inviter-maker';
+  const handleMakeSticker = onMakeSticker || (() => stickerPhotoInputRef.current?.click());
+  const visibleStickers = stickerTab === 'recents'
+    ? [...stickerLibrary].reverse().slice(0, 12)
+    : stickerLibrary;
+  const handlePlaceSticker = (src) => {
+    placeSticker(src);
+    closePanel();
+  };
+
+  const emojiContent = (
+    <div
+      className="sp-emoji-wrap"
+      ref={spEmojiWrapRef}
+      style={{ display: stickerTab === 'emoji' ? 'flex' : 'none' }}
+    >
+      <div className="sp-emoji-sticky">
+        <input
+          ref={spEmojiSearchRef}
+          className="sp-emoji-search"
+          type="text"
+          placeholder="Search emoji..."
+        />
+      </div>
+      <div ref={spEmojiCatsRef} className="sp-emoji-cats" />
+      <div ref={spEmojiGridRef} className="sp-emoji-grid" />
+    </div>
+  );
 
   return (
     <>
       {/* Sticker Panel */}
-      <div className={`sticker-panel${stickerPanelVisible ? ' sp-visible' : ''}`} id="stickerPanel">
+      <div className={`sticker-panel${stickerPanelVisible ? ' sp-visible' : ''}${isInviterDrawer ? ' sticker-panel--inviter-drawer' : ''}`} id="stickerPanel">
         <div className="sp-header">
           <p className="sp-title">Stickers</p>
           <SolidIconButton className="sp-close" icon="close" label="Close stickers" onClick={closePanel} />
@@ -122,39 +151,54 @@ export default function StickerPanel({ sys }) {
           })}
         </div>
 
-        <div className="sp-content">
-          {/* Empty */}
-          <div
-            style={{ display: stickerTab !== 'emoji' && stickerLibrary.length === 0 ? 'flex' : 'none' }}
-          >
-            <StickerEmptyState onGetStarted={() => stickerPhotoInputRef.current?.click()} />
-          </div>
-
-          {/* Grid */}
-          <div
-            className="sp-grid"
-            ref={spGridRef}
-            style={{ display: stickerTab !== 'emoji' && stickerLibrary.length > 0 ? 'grid' : 'none' }}
-          />
-
-          {/* Emoji */}
-          <div
-            className="sp-emoji-wrap"
-            ref={spEmojiWrapRef}
-            style={{ display: stickerTab === 'emoji' ? 'flex' : 'none' }}
-          >
-            <div className="sp-emoji-sticky">
-              <input
-                ref={spEmojiSearchRef}
-                className="sp-emoji-search"
-                type="text"
-                placeholder="Search emoji..."
-              />
+        {isInviterDrawer ? (
+          <div className="sp-content">
+            <div
+              className="sp-grid sp-grid--react"
+              style={{ display: stickerTab !== 'emoji' ? 'grid' : 'none' }}
+            >
+              <button
+                type="button"
+                className="sp-add-cell sp-add-cell--make"
+                aria-label="Make Sticker"
+                onClick={handleMakeSticker}
+              >
+                <ToolIcon type="plus" />
+              </button>
+              {visibleStickers.map(stk => (
+                <button
+                  type="button"
+                  key={stk.id}
+                  className="sp-sticker-cell"
+                  aria-label="Place sticker"
+                  onClick={() => handlePlaceSticker(stk.src)}
+                >
+                  <img src={stk.src} alt="" />
+                </button>
+              ))}
             </div>
-            <div ref={spEmojiCatsRef} className="sp-emoji-cats" />
-            <div ref={spEmojiGridRef} className="sp-emoji-grid" />
+            {emojiContent}
           </div>
-        </div>
+        ) : (
+          <div className="sp-content">
+            {/* Empty */}
+            <div
+              style={{ display: stickerTab !== 'emoji' && stickerLibrary.length === 0 ? 'flex' : 'none' }}
+            >
+              <StickerEmptyState onGetStarted={() => stickerPhotoInputRef.current?.click()} />
+            </div>
+
+            {/* Grid */}
+            <div
+              className="sp-grid"
+              ref={spGridRef}
+              style={{ display: stickerTab !== 'emoji' && stickerLibrary.length > 0 ? 'grid' : 'none' }}
+            />
+
+            {/* Emoji */}
+            {emojiContent}
+          </div>
+        )}
       </div>
 
       {/* New Sticker Screen */}

@@ -5,32 +5,40 @@ import { useToast } from '../editor/hooks/useToast';
 import { useStickerSystem } from '../editor/hooks/useStickerSystem';
 import { useCanvasDrawing } from '../editor/hooks/useCanvasDrawing';
 import { useConfirmDialog } from '../editor/hooks/useConfirmDialog';
-import { filterOrderedToolIds, RETAKE_REVIEW_TOOL_IDS, useToolbarState } from '../editor/hooks/useToolbarState';
+import { useToolbarState } from '../editor/hooks/useToolbarState';
 import { useHistory } from '../editor/hooks/useHistory';
 import { useTextTool } from '../editor/hooks/useTextTool';
+import useActiveCanvasInteraction from '../editor/hooks/useActiveCanvasInteraction.js';
 import useInviterLayerStack from '../editor/hooks/useInviterLayerStack.js';
 import useMediaTransform from '../editor/hooks/useMediaTransform';
+import useToolbarCollision from '../editor/hooks/useToolbarCollision.js';
+import useToolbarVisibility from '../editor/hooks/useToolbarVisibility.js';
 import { useEditName } from './hooks/useEditName';
 import { createInvite, uploadFrame } from '../../lib/api.js';
 import StickerPanel from '../editor/components/StickerPanel';
 import TextToolOverlay from '../editor/components/TextToolOverlay';
 import DrawingToolOverlays from '../editor/components/DrawingToolOverlays';
 import ConfirmDialog from '../editor/components/ConfirmDialog';
-import FrameCanvas from '../editor/components/FrameCanvas';
+import CanvasStage from '../editor/components/CanvasStage.jsx';
+import BottomToolbar from '../editor/components/BottomToolbar.jsx';
+import EditorBottomToolbar from '../editor/components/EditorBottomToolbar.jsx';
+import EditorHeader from '../editor/components/EditorHeader.jsx';
+import EditorScreen from '../editor/components/EditorScreen.jsx';
 import ExitButton from '../editor/components/ExitButton';
+import MoreToolsPanel from '../editor/components/MoreToolsPanel.jsx';
 import UndoRedoCluster from '../editor/components/UndoRedoCluster';
 import Toast from '../../components/ui/Toast';
-import VerticalToolbar from './components/VerticalToolbar';
 import BottomBar from './components/BottomBar';
 import RetakeCameraBottomBar from '../editor/components/RetakeCameraBottomBar.jsx';
 import CameraGestureToast from '../editor/components/CameraGestureToast.jsx';
 import { RetakeCountdownOverlay, RetakeRecordingStroke, RetakeScreenFlash } from '../editor/components/RetakeCameraOverlays.jsx';
 import RetakeCameraStage from '../editor/components/RetakeCameraStage.jsx';
-import RetakeReviewToolbar from '../editor/components/RetakeReviewToolbar.jsx';
 import RetakeZoomControl from '../editor/components/RetakeZoomControl.jsx';
 import PhotoInputs from './components/PhotoInputs';
 import EditNamePopup from './components/EditNamePopup';
 import IntroCard from './components/IntroCard';
+import StickerEditorScreen from './components/StickerEditorScreen.jsx';
+import EditSelectionPanel from '../editor/selection/EditSelectionPanel.jsx';
 import { INVITER_FLOW_STATES } from './state.js';
 import { buildInviteUrl } from '../../lib/routes.js';
 import {
@@ -277,6 +285,15 @@ function downloadBlob(blob, filename) {
   }, 1000);
 }
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('Could not read image'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function InviterPage() {
   // ── Canvas / ctx refs ──
   const canvasRef = useRef(null);
@@ -306,6 +323,8 @@ export default function InviterPage() {
   const tmLeftPanelRef = useRef(null);
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const stickerEditorPhotoInputRef = useRef(null);
+  const floatingToolbarRef = useRef(null);
   const introPhotoFlowRef = useRef(false);
   const step3VideoRef = useRef(null);
   const step3StreamRef = useRef(null);
@@ -355,6 +374,7 @@ export default function InviterPage() {
   const [toolsOut, setToolsOut] = useState(false);
   const [bottomBarVisible, setBottomBarVisible] = useState(false);
   const [bottomBarOut, setBottomBarOut] = useState(false);
+  const [isMorePanelOpen, setIsMorePanelOpen] = useState(false);
   const [exitBtnOut, setExitBtnOut] = useState(false);
   const [undoRedoOut, setUndoRedoOut] = useState(false);
   const [tmIn, setTmIn] = useState(false);
@@ -379,22 +399,38 @@ export default function InviterPage() {
   const [s2GalleryAdjustable, setS2GalleryAdjustable] = useState(false);
   const [savedFrames, setSavedFrames] = useState(() => loadSavedFrames());
   const [savedFramesVisible, setSavedFramesVisible] = useState(false);
+  const [savedFramesSource, setSavedFramesSource] = useState('editor');
   const [savedFrameTitleEditing, setSavedFrameTitleEditing] = useState(false);
   const [savedFrameSavedTitle, setSavedFrameSavedTitle] = useState(null);
+  const [stickerEditorVisible, setStickerEditorVisible] = useState(false);
+  const [stickerEditorImageSrc, setStickerEditorImageSrc] = useState('');
+  const [editSelectionItem, setEditSelectionItem] = useState(null);
   const pendingShareAfterNameRef = useRef(false);
   const bottomBarOutBeforeStickerDragRef = useRef(false);
 
   // ── Hooks ──
   const { toastMsg, toastVisible, showToast } = useToast(1800);
+  const {
+    isInteractingWithCanvas,
+    startCanvasInteraction,
+    endCanvasInteraction,
+  } = useActiveCanvasInteraction();
   const handleStickerItemDragStart = useCallback(() => {
+    startCanvasInteraction();
     setBottomBarOut(prev => {
       bottomBarOutBeforeStickerDragRef.current = prev;
       return true;
     });
-  }, []);
+  }, [startCanvasInteraction]);
   const handleStickerItemDragEnd = useCallback(() => {
+    endCanvasInteraction();
     setBottomBarOut(bottomBarOutBeforeStickerDragRef.current);
     bottomBarOutBeforeStickerDragRef.current = false;
+  }, [endCanvasInteraction]);
+  const handleEditImageItem = useCallback((item) => {
+    if (!item || item.type === 'text') return;
+    setEditSelectionItem(item);
+    setScrimVisible(false);
   }, []);
   const s2GalleryTransform = useMediaTransform();
   const step3CameraTransform = useMediaTransform({
@@ -479,7 +515,43 @@ export default function InviterPage() {
     onItemPlaced: layerStack.registerItemLayer,
     onItemTouched: layerStack.touchLayer,
     onItemRemoved: layerStack.removeLayer,
+    onEditImageItem: handleEditImageItem,
   });
+  const handleCanvasPaste = useCallback(async (event) => {
+    if (!event.clipboardData) return;
+    event.preventDefault();
+    await stickerSys.pasteClipboardImage(event.clipboardData, { saveOnly: false });
+  }, [stickerSys]);
+  const openInviterStickerLibrary = useCallback(() => {
+    stickerSys.closePanel();
+    setScrimVisible(false);
+    window.setTimeout(() => stickerEditorPhotoInputRef.current?.click(), 0);
+  }, [stickerSys]);
+  const handleStickerEditorPhotoChange = useCallback(async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setStickerEditorImageSrc(dataUrl);
+      setStickerEditorVisible(true);
+      setScrimVisible(false);
+    } catch (err) {
+      console.warn('[sticker-editor] Photo load failed:', err);
+      showToast('Could not open photo');
+    }
+  }, [showToast]);
+  const closeStickerEditor = useCallback(() => {
+    setStickerEditorVisible(false);
+    setStickerEditorImageSrc('');
+  }, []);
+  const addStickerEditorImage = useCallback(({ src, width, height }) => {
+    if (!src) return;
+    stickerSys.placeSticker(src, width, height);
+    closeStickerEditor();
+    showToast('Sticker added');
+  }, [closeStickerEditor, showToast, stickerSys]);
 
   const {
     confirmVisible, confirmScrimVisible, confirmMsg, confirmOkLabel, confirmDanger,
@@ -503,18 +575,24 @@ export default function InviterPage() {
     restoreSnapshot: restoreInviterSnapshot,
   });
 
+  const closeEditSelection = useCallback(() => {
+    setEditSelectionItem(null);
+  }, []);
+
+  const confirmEditSelection = useCallback((result) => {
+    if (!editSelectionItem) return;
+    if (stickerSys.replaceImageItem(editSelectionItem, result)) {
+      pushHistory();
+      showToast('Image updated');
+    }
+    setEditSelectionItem(null);
+  }, [editSelectionItem, pushHistory, showToast, stickerSys]);
+
   const {
-    toolsCollapsed, setToolsCollapsed,
+    setToolsCollapsed,
     toolsCollapsedRef, toolsCollapseTimerRef,
-    labelsExpanded,
-    orderedToolIds, addRecentTool,
-    handleToggleTools, handleToolbarInteraction, handleToolMouseEnter, handleToolMouseLeave,
+    addRecentTool,
   } = useToolbarState();
-  const step2ToolIds = orderedToolIds;
-  const step3ToolIds = useMemo(
-    () => filterOrderedToolIds(orderedToolIds, RETAKE_REVIEW_TOOL_IDS),
-    [orderedToolIds]
-  );
   const step3ZoomOptions = useMemo(() => {
     if (!step3CameraCapabilities.zoom) return [];
     return [0.5, 1, 2].filter(
@@ -528,6 +606,32 @@ export default function InviterPage() {
     editNameVisible, editNameInputValue, setEditNameInputValue,
     openEditName, saveEditName,
   } = useEditName({ frameName, setFrameName, setScrimVisible });
+  const floatingToolbarEnabled = (
+    editorVisible
+    && !savedFramesVisible
+    && !editNameVisible
+    && !confirmVisible
+    && !stickerSys.stickerPanelVisible
+    && !stickerSys.newStickerVisible
+    && !step3Recording
+    && step3CountdownValue === null
+    && step3Mode !== STEP3_MODE.LIVE
+  );
+  const { hasToolbarCollision } = useToolbarCollision({
+    frameRef: frameElRef,
+    toolbarRef: floatingToolbarRef,
+    enabled: floatingToolbarEnabled,
+  });
+  const {
+    toolbarMode,
+    hiddenDuringInteraction,
+    collapseToolbar,
+    expandToolbar,
+  } = useToolbarVisibility({
+    isInteractingWithCanvas,
+    hasToolbarCollision,
+    disabled: !floatingToolbarEnabled || bottomBarOut,
+  });
 
   const {
     textToolActive,
@@ -673,6 +777,8 @@ export default function InviterPage() {
     getMagicSelectionSourceCanvas,
     onCommitStroke: layerStack.addStrokeLayer,
     onCommitCanvasFill: layerStack.setCanvasFillFromCanvas,
+    onCanvasInteractionStart: startCanvasInteraction,
+    onCanvasInteractionEnd: endCanvasInteraction,
     onInitialIntro: () => {
       mainUndoStackRef.current = [snapshot()];
     },
@@ -1671,16 +1777,20 @@ export default function InviterPage() {
     }
   }, [buildFrameDataUrl, frameName, showToast]);
 
-  const openSavedFrames = useCallback(() => {
+  const openSavedFrames = useCallback((source = 'editor') => {
     setSavedFrames(loadSavedFrames());
+    setSavedFramesSource(source);
+    if (source === 'intro') setIntroCardVisible(false);
     setSavedFramesVisible(true);
     setScrimVisible(true);
   }, []);
 
   const closeSavedFrames = useCallback(() => {
+    const shouldKeepIntroScrim = savedFramesSource === 'intro' && !editorVisible && !step3Mode;
     setSavedFramesVisible(false);
-    setScrimVisible(false);
-  }, []);
+    setScrimVisible(shouldKeepIntroScrim);
+    if (shouldKeepIntroScrim) setIntroCardVisible(true);
+  }, [editorVisible, savedFramesSource, step3Mode]);
 
   const handleSavedFrameSelect = useCallback(async (frame) => {
     try {
@@ -1692,19 +1802,23 @@ export default function InviterPage() {
       ctx.drawImage(img, 0, 0, width, height);
       stickerSys.clearStickers();
       layerStack.clearLayers();
+      layerStack.setCanvasFillFromCanvas(canvas);
+      ctx.clearRect(0, 0, width, height);
       setFrameName(frame.name || 'my frame');
       setSavedFrameSavedTitle(frame.name || 'my frame');
       setSavedFrameTitleEditing(false);
       mainUndoStackRef.current = [snapshot()];
       mainRedoStackRef.current = [];
       syncHistoryBtns();
+      const shouldEnterEditor = savedFramesSource === 'intro' || (!editorVisible && !step3Mode);
       closeSavedFrames();
+      if (shouldEnterEditor) await enterEditor();
       showToast('Frame loaded');
     } catch (err) {
       console.warn('[step3] Saved frame load failed:', err);
       showToast('Could not load frame');
     }
-  }, [closeSavedFrames, getCanvasSize, layerStack, mainRedoStackRef, mainUndoStackRef, showToast, snapshot, stickerSys, syncHistoryBtns]);
+  }, [closeSavedFrames, editorVisible, enterEditor, getCanvasSize, layerStack, mainRedoStackRef, mainUndoStackRef, savedFramesSource, showToast, snapshot, step3Mode, stickerSys, syncHistoryBtns]);
 
   const handleSavedFrameDelete = useCallback((frameId) => {
     const removed = loadSavedFrames().find(frame => frame.id === frameId);
@@ -1862,9 +1976,11 @@ export default function InviterPage() {
     if (target.closest?.('.placed-sticker, .placed-text, .placed-photo')) {
       return;
     }
+    expandToolbar();
     stickerSys.deselectAllStickers?.();
     if (!canHandleS2GalleryGesture()) return;
     e.preventDefault();
+    startCanvasInteraction();
     if (!s2GalleryGestureActiveRef.current && s2GalleryTransform.getActivePointerCount() > 0) {
       s2GalleryTransform.cancel();
     }
@@ -1878,7 +1994,7 @@ export default function InviterPage() {
       }
     }
     s2GalleryTransform.handlePointerDown(e);
-  }, [canHandleS2GalleryGesture, s2GalleryTransform, stickerSys]);
+  }, [canHandleS2GalleryGesture, expandToolbar, s2GalleryTransform, startCanvasInteraction, stickerSys]);
 
   const handleS2GalleryPointerMove = useCallback((e) => {
     if (!s2GalleryGestureActiveRef.current || !canHandleS2GalleryGesture()) return;
@@ -1904,10 +2020,11 @@ export default function InviterPage() {
     if (s2GalleryTransform.getActivePointerCount() === 0) {
       s2GalleryGestureActiveRef.current = false;
       s2GalleryGestureMovedRef.current = false;
+      endCanvasInteraction();
     } else {
       s2GalleryGestureMovedRef.current = moved;
     }
-  }, [renderS2GalleryPlacement, s2GalleryTransform]);
+  }, [endCanvasInteraction, renderS2GalleryPlacement, s2GalleryTransform]);
 
   const handleS2GalleryPointerCancel = useCallback((e) => {
     if (!s2GalleryGestureActiveRef.current) return;
@@ -1918,7 +2035,8 @@ export default function InviterPage() {
     }
     s2GalleryGestureActiveRef.current = false;
     s2GalleryGestureMovedRef.current = false;
-  }, [renderS2GalleryPlacement, s2GalleryTransform]);
+    endCanvasInteraction();
+  }, [endCanvasInteraction, renderS2GalleryPlacement, s2GalleryTransform]);
 
   useEffect(() => {
     if (!s2GalleryAdjustable || !s2GalleryImageRef.current) return;
@@ -2003,6 +2121,11 @@ export default function InviterPage() {
 
   const handleBgGallery = useCallback(() => {
     if (galleryInputRef.current) galleryInputRef.current.click();
+  }, []);
+
+  const handleBgCamera = useCallback(() => {
+    introPhotoFlowRef.current = false;
+    if (cameraInputRef.current) cameraInputRef.current.click();
   }, []);
 
   const handleProceedToStep3 = useCallback(async () => {
@@ -2206,9 +2329,45 @@ export default function InviterPage() {
   const isStep3Review = isStep3PhotoReview || isStep3VideoReview;
   const isStep3Countdown = step3CountdownValue !== null;
   const isStep3CaptureBusy = step3Recording || isStep3Countdown;
-  const stickerMakerVisible = stickerSys.newStickerVisible;
+  const stickerMakerVisible = stickerSys.newStickerVisible || stickerEditorVisible || !!editSelectionItem;
+  const showFloatingEditorToolbar = (
+    (!isStep3 && !stickerMakerVisible)
+    || (isStep3Review && !isStep3CaptureBusy && !stickerMakerVisible)
+  );
   const normalizedFrameName = frameName.trim() || 'my frame';
   const isSavedFrameTitleSaved = !!savedFrameSavedTitle && savedFrameSavedTitle === normalizedFrameName;
+
+  const openMoreToolsPanel = useCallback(() => {
+    setIsMorePanelOpen(true);
+  }, []);
+
+  const closeMoreToolsPanel = useCallback(() => {
+    setIsMorePanelOpen(false);
+  }, []);
+
+  const handleMoreImage = useCallback(() => {
+    closeMoreToolsPanel();
+    handleBgGallery();
+  }, [closeMoreToolsPanel, handleBgGallery]);
+
+  const handleMoreCamera = useCallback(() => {
+    closeMoreToolsPanel();
+    handleBgCamera();
+  }, [closeMoreToolsPanel, handleBgCamera]);
+
+  const handleMoreLayers = useCallback(() => {
+    closeMoreToolsPanel();
+    showToast('Layers coming soon');
+  }, [closeMoreToolsPanel, showToast]);
+
+  const handleMoreDownload = useCallback(() => {
+    closeMoreToolsPanel();
+    if (isStep3Review) {
+      handleStep3SaveRetake();
+      return;
+    }
+    handleToolDownload();
+  }, [closeMoreToolsPanel, handleStep3SaveRetake, handleToolDownload, isStep3Review]);
 
   const flowState = savedFramesVisible
     ? INVITER_FLOW_STATES.STEP3_SAVED_FRAMES
@@ -2223,11 +2382,12 @@ export default function InviterPage() {
       : editorVisible
         ? INVITER_FLOW_STATES.EDITING
         : INVITER_FLOW_STATES.INTRO;
+  const savedFramesIntroMode = savedFramesVisible && savedFramesSource === 'intro' && !editorVisible && !step3Mode;
 
   return (
-    <div className="screen" id="screen" data-flow-state={flowState}>
+    <EditorScreen flowState={flowState}>
 
-      <FrameCanvas
+      <CanvasStage
         canvasRef={canvasRef}
         selectionCanvasRef={selectionCanvasRef}
         frameElRef={frameElRef}
@@ -2236,6 +2396,7 @@ export default function InviterPage() {
         onPointerMove={handleS2GalleryPointerMove}
         onPointerUp={handleS2GalleryPointerUp}
         onPointerCancel={handleS2GalleryPointerCancel}
+        onPaste={handleCanvasPaste}
         brushCursorRef={brushCursorRef}
         brushCursorSvgRef={brushCursorSvgRef}
         brushCursorCircleRef={brushCursorCircleRef}
@@ -2262,7 +2423,7 @@ export default function InviterPage() {
           onPointerUp={handleStep3PointerUp}
           onPointerCancel={handleStep3PointerCancel}
         />
-      </FrameCanvas>
+      </CanvasStage>
 
       <RetakeRecordingStroke visible={step3Recording} progress={step3RecordingProgress} />
 
@@ -2288,103 +2449,112 @@ export default function InviterPage() {
 
       <CameraGestureToast visible={isStep3Live && step3GestureHintVisible && !isStep3CaptureBusy && !stickerMakerVisible} />
 
-      {!isStep3CaptureBusy && !stickerMakerVisible && (
-        <ExitButton
-          visible={exitBtnVisible}
-          out={exitBtnOut}
-          label={isStep3 ? 'Leave camera preview' : 'Close frame editor'}
-          onClick={handleExitBtn}
-        />
-      )}
+      <EditorHeader>
+        {!isStep3CaptureBusy && !stickerMakerVisible && (
+          <div className="editor-header-group editor-header-group--exit">
+            <ExitButton
+              visible={exitBtnVisible}
+              out={exitBtnOut}
+              label={isStep3 ? 'Leave camera preview' : 'Close frame editor'}
+              onClick={handleExitBtn}
+            />
+          </div>
+        )}
 
-      {!isStep3 && !stickerMakerVisible && (
-        <>
-          <UndoRedoCluster
-            visible={undoRedoVisible}
-            out={undoRedoOut}
-            undoDisabled={undoBtnDisabled}
-            redoDisabled={redoBtnDisabled}
-            onUndo={mainUndo}
-            onRedo={mainRedo}
-          />
+        {!isStep3 && !stickerMakerVisible && (
+          <>
+            <div className="editor-header-group editor-header-group--history">
+              <UndoRedoCluster
+                visible={undoRedoVisible}
+                out={undoRedoOut}
+                undoDisabled={undoBtnDisabled}
+                redoDisabled={redoBtnDisabled}
+                onUndo={mainUndo}
+                onRedo={mainRedo}
+              />
+            </div>
 
-          <SolidIconButton
-            className={`s6-overflow-btn${toolsVisible ? ' visible' : ''}${toolsOut ? ' out' : ''}`}
-            icon="moreHorizontal"
-            label="More editor tools"
-            onClick={handleToggleTools}
-          />
+            <div className="editor-header-group editor-header-group--actions">
+              <SolidIconButton
+                className={`s6-overflow-btn${toolsVisible ? ' visible' : ''}${toolsOut ? ' out' : ''}`}
+                icon="moreHorizontal"
+                label="More editor tools"
+                onClick={openMoreToolsPanel}
+              />
 
-          <VerticalToolbar
-            visible={toolsVisible}
-            out={toolsOut}
-            collapsed={toolsCollapsed}
-            labelsExpanded={labelsExpanded}
+              <BottomBar
+                visible={bottomBarVisible}
+                out={bottomBarOut}
+                onGalleryClick={handleBgGallery}
+                onProceed={handleProceedToStep3}
+                showGallery={false}
+              />
+            </div>
+          </>
+        )}
+      </EditorHeader>
+
+      <EditorBottomToolbar
+        adaptive={showFloatingEditorToolbar}
+        toolbarRef={floatingToolbarRef}
+        toolbarMode={toolbarMode}
+        hiddenDuringInteraction={hiddenDuringInteraction}
+        onCollapse={collapseToolbar}
+        onExpand={expandToolbar}
+      >
+        {!isStep3 && !stickerMakerVisible && (
+          <BottomToolbar
             activeTool={activeTool}
-            orderedToolIds={step2ToolIds}
-            onToolText={handleToolText}
-            onToolStickers={handleToolStickers}
-            onToolDoodle={handleToolDoodle}
-            onToolMagicPen={handleToolMagicPen}
-            onToolDownload={handleToolDownload}
-            onPhoto={handleBgGallery}
-            onToggle={handleToggleTools}
-            onInteraction={handleToolbarInteraction}
-            onToolMouseEnter={handleToolMouseEnter}
-            onToolMouseLeave={handleToolMouseLeave}
+            onDrawing={handleToolDoodle}
+            onText={handleToolText}
+            onSticker={handleToolStickers}
+            onTransparentPen={handleToolMagicPen}
+            onMore={openMoreToolsPanel}
           />
+        )}
 
-          <BottomBar
-            visible={bottomBarVisible}
+        {isStep3Review && !isStep3CaptureBusy && !stickerMakerVisible && (
+          <BottomToolbar
+            activeTool={activeTool}
+            onDrawing={handleToolDoodle}
+            onText={handleToolText}
+            onSticker={handleToolStickers}
+            onTransparentPen={() => {}}
+            onMore={openMoreToolsPanel}
+          />
+        )}
+
+        {isStep3 && !isStep3CaptureBusy && !stickerMakerVisible && (
+          <RetakeCameraBottomBar
+            visible
             out={bottomBarOut}
-            onGalleryClick={handleBgGallery}
-            onProceed={handleProceedToStep3}
-            showGallery={false}
+            className="retake-camera-bottom-bar--split-actions inviter-s3-bottom-bar"
+            glassControls
+            hideTitle
+            review={false}
+            title={frameName}
+            titleLabel="Name your frame"
+            leftLabel="Back"
+            onLeft={handleStep3Back}
+            showSecondary={false}
+            primaryIcon={null}
+            primaryAvatar={{ icon: 'share' }}
+            primaryVariant="avatar-chip"
+            primaryLabel="Share"
+            primaryText="Share"
+            onPrimary={() => openSavedFrames('step3')}
           />
-        </>
-      )}
+        )}
+      </EditorBottomToolbar>
 
-      {isStep3Review && !isStep3CaptureBusy && !stickerMakerVisible && (
-        <RetakeReviewToolbar
-          visible={toolsVisible}
-          out={toolsOut}
-          collapsed={toolsCollapsed}
-          labelsExpanded={labelsExpanded}
-          activeTool={activeTool}
-          orderedToolIds={step3ToolIds}
-          onToolText={handleToolText}
-          onToolStickers={handleToolStickers}
-          onToolDoodle={handleToolDoodle}
-          onToolMagicPen={() => {}}
-          onToolDownload={handleStep3SaveRetake}
-          onToggle={handleToggleTools}
-          onInteraction={handleToolbarInteraction}
-          onToolMouseEnter={handleToolMouseEnter}
-          onToolMouseLeave={handleToolMouseLeave}
-        />
-      )}
-
-      {isStep3 && !isStep3CaptureBusy && !stickerMakerVisible && (
-        <RetakeCameraBottomBar
-          visible
-          out={bottomBarOut}
-          className="retake-camera-bottom-bar--split-actions inviter-s3-bottom-bar"
-          glassControls
-          hideTitle
-          review={false}
-          title={frameName}
-          titleLabel="Name your frame"
-          leftLabel="Back"
-          onLeft={handleStep3Back}
-          showSecondary={false}
-          primaryIcon={null}
-          primaryAvatar={{ icon: 'share' }}
-          primaryVariant="avatar-chip"
-          primaryLabel="Share"
-          primaryText="Share"
-          onPrimary={openSavedFrames}
-        />
-      )}
+      <MoreToolsPanel
+        open={isMorePanelOpen}
+        onClose={closeMoreToolsPanel}
+        onImage={handleMoreImage}
+        onCamera={handleMoreCamera}
+        onLayers={handleMoreLayers}
+        onDownload={handleMoreDownload}
+      />
 
       <DrawingToolOverlays
         tmLeftPanelRef={tmLeftPanelRef}
@@ -2433,80 +2603,92 @@ export default function InviterPage() {
         saveLabel={editNameSaveLabel}
       />
 
-      <div className={`saved-frames-sheet${savedFramesVisible ? ' visible' : ''}`} id="savedFramesSheet">
+      <div className={`saved-frames-sheet${savedFramesVisible ? ' visible' : ''}${savedFramesIntroMode ? ' saved-frames-sheet--library-only' : ''}`} id="savedFramesSheet">
         <div className="saved-frames-topbar">
           <div className="saved-frames-handle"></div>
           <SolidIconButton className="saved-frames-close" icon="close" label="Close saved frames" onClick={closeSavedFrames} />
         </div>
-        <div className="saved-frame-current">
-          <div className="saved-frame-title-row">
-            <div className="saved-frame-title-main">
-              <p className="saved-frame-title-label">Frame title</p>
-              {savedFrameTitleEditing ? (
-                <input
-                  className="saved-frame-title-input"
-                  id="savedFrameTitle"
-                  type="text"
-                  value={frameName}
-                  maxLength="32"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  spellCheck="false"
-                  autoFocus
-                  onChange={e => setFrameName(e.target.value)}
-                  onFocus={e => e.currentTarget.select()}
-                  onKeyDown={e => { if (e.key === 'Enter') setSavedFrameTitleEditing(false); }}
-                />
-              ) : (
-                <button
-                  type="button"
-                  className="saved-frame-title-display"
-                  onClick={() => setSavedFrameTitleEditing(true)}
-                >
-                  {normalizedFrameName}
-                </button>
-              )}
-            </div>
-            <div className="saved-frame-title-actions" aria-label="Frame title actions">
-              {savedFrameTitleEditing ? (
-                <button
-                  type="button"
-                  className="saved-frame-done-action"
-                  onClick={() => setSavedFrameTitleEditing(false)}
-                >
-                  Done
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="saved-frame-edit-action"
-                    onClick={() => setSavedFrameTitleEditing(true)}
-                  >
-                    Rename
-                  </button>
-                  <button
-                    type="button"
-                    className={`saved-frame-action${isSavedFrameTitleSaved ? ' saved' : ''}`}
-                    disabled={isSavedFrameTitleSaved}
-                    onClick={() => saveFrameLocal('made')}
-                  >
-                    {isSavedFrameTitleSaved ? 'Saved' : 'Save'}
-                  </button>
-                </>
-              )}
+        {savedFramesIntroMode && (
+          <div className="saved-frames-header">
+            <div>
+              <p className="saved-frames-title">Saved frames</p>
+              <p className="saved-frames-subtitle">Pick one to keep editing.</p>
             </div>
           </div>
-        </div>
-        <button
-          type="button"
-          className="saved-frame-share-action"
-          onClick={() => handleStep3ShareRetake(normalizedFrameName)}
-        >
-          Share
-        </button>
+        )}
+        {!savedFramesIntroMode && (
+          <>
+            <div className="saved-frame-current">
+              <div className="saved-frame-title-row">
+                <div className="saved-frame-title-main">
+                  <p className="saved-frame-title-label">Frame title</p>
+                  {savedFrameTitleEditing ? (
+                    <input
+                      className="saved-frame-title-input"
+                      id="savedFrameTitle"
+                      type="text"
+                      value={frameName}
+                      maxLength="32"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      autoFocus
+                      onChange={e => setFrameName(e.target.value)}
+                      onFocus={e => e.currentTarget.select()}
+                      onKeyDown={e => { if (e.key === 'Enter') setSavedFrameTitleEditing(false); }}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="saved-frame-title-display"
+                      onClick={() => setSavedFrameTitleEditing(true)}
+                    >
+                      {normalizedFrameName}
+                    </button>
+                  )}
+                </div>
+                <div className="saved-frame-title-actions" aria-label="Frame title actions">
+                  {savedFrameTitleEditing ? (
+                    <button
+                      type="button"
+                      className="saved-frame-done-action"
+                      onClick={() => setSavedFrameTitleEditing(false)}
+                    >
+                      Done
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="saved-frame-edit-action"
+                        onClick={() => setSavedFrameTitleEditing(true)}
+                      >
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        className={`saved-frame-action${isSavedFrameTitleSaved ? ' saved' : ''}`}
+                        disabled={isSavedFrameTitleSaved}
+                        onClick={() => saveFrameLocal('made')}
+                      >
+                        {isSavedFrameTitleSaved ? 'Saved' : 'Save'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="saved-frame-share-action"
+              onClick={() => handleStep3ShareRetake(normalizedFrameName)}
+            >
+              Share
+            </button>
+          </>
+        )}
         <div className="saved-frames-library-header">
-          <p className="saved-frames-title">Saved frames</p>
+          {!savedFramesIntroMode && <p className="saved-frames-title">Saved frames</p>}
         </div>
         <div className="saved-frames-grid">
           {savedFrames.length === 0 ? (
@@ -2535,9 +2717,8 @@ export default function InviterPage() {
 
       <IntroCard
         visible={introCardVisible}
-        onChoosePhoto={handleChoosePhoto}
-        onTakePhoto={handleTakePhoto}
         onStartBlank={handleStartBlank}
+        onOpenSavedFrames={() => openSavedFrames('intro')}
       />
 
       <ConfirmDialog
@@ -2563,8 +2744,39 @@ export default function InviterPage() {
         onConfirm={() => exitTextTool(true)}
       />
 
-      <StickerPanel sys={stickerSys} />
+      <StickerEditorScreen
+        visible={stickerEditorVisible}
+        imageSrc={stickerEditorImageSrc}
+        onClose={closeStickerEditor}
+        onAddSticker={addStickerEditorImage}
+      />
 
-    </div>
+      <EditSelectionPanel
+        visible={!!editSelectionItem}
+        sourceSrc={editSelectionItem?.src || ''}
+        initialSelection="selectAll"
+        confirmLabel="Done"
+        title="Edit image"
+        logPrefix="image-edit-selection"
+        onCancel={closeEditSelection}
+        onConfirm={confirmEditSelection}
+      />
+
+      <input
+        type="file"
+        id="inviterStickerEditorPhotoInput"
+        accept="image/*"
+        ref={stickerEditorPhotoInputRef}
+        onChange={handleStickerEditorPhotoChange}
+        style={{ display: 'none' }}
+      />
+
+      <StickerPanel
+        sys={stickerSys}
+        variant="inviter-maker"
+        onMakeSticker={openInviterStickerLibrary}
+      />
+
+    </EditorScreen>
   );
 }
